@@ -1,0 +1,38 @@
+name = "kiosk"
+description = "Kiosk blueprint"
+version = "0.0.3"
+modules = []
+groups = []
+
+[[packages]]
+name = "gdm"
+version = "*"
+
+[[packages]]
+name = "gnome-kiosk"
+version = "*"
+
+[[packages]]
+name = "gnome-kiosk-script-session"
+version = "*"
+
+[[packages]]
+name = "firefox"
+version = "*"
+
+
+[[packages]]
+name = "cockpit-system"
+
+
+[customizations]
+
+[[customizations.user]]
+name = "kiosk"
+description = "kiosk"
+#password hash obatained with:
+#  python3 -c 'import crypt,getpass;pw=getpass.getpass();print(crypt.crypt(pw) if (pw==getpass.getpass("Confirm: ")) else exit())'
+password = ""
+key = "<ssh public key>"
+home = "/home/admin/"
+shell = "/usr/bin/bash"
