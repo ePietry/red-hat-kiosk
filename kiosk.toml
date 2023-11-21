@@ -27,10 +27,18 @@ name = "cockpit-system"
 
 [customizations]
 
+[customizations.services]
+enabled = ["cockpit.socket"]
+hostname = "kiosk"
+
+
+[customizations.firewall]
+ports = ["22:tcp", "80:tcp", "443:tcp", "9090:tcp"]
+
 [[customizations.user]]
 name = "kiosk"
 description = "kiosk"
-#password hash obatained with:
+#password hash obtained with:
 #  python3 -c 'import crypt,getpass;pw=getpass.getpass();print(crypt.crypt(pw) if (pw==getpass.getpass("Confirm: ")) else exit())'
 password = ""
 key = "<ssh public key>"
