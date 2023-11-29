@@ -1,7 +1,8 @@
 import platform
 from flask import Flask, render_template
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="/app/templates")
+
 
 @app.route('/')
 def system_info():
@@ -13,7 +14,7 @@ def system_info():
         'Machine': platform.machine(),
         'Processor': platform.processor()
     }
-    return render_template('system_info.html', system_info=system_info)
+    return render_template('index.html', system_info=system_info)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", debug=True)

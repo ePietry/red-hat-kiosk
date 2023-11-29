@@ -8,11 +8,11 @@ zerombr
 clearpart --all --initlabel
 autopart --type=plain --fstype=xfs --nohome
 network --bootproto=dhcp
-rootpw --iscrypted $6$3OrUXJfD.64WiZl2$4/oBFyFgIyPI6LdLCbE.h99YBrFa..pC3x3WlHNH8mUf4ssZmhlhy17CHc0n3kAvHvWecpqunVOd/4kOGB7Ms.
+rootpw --iscrypted $6$vnnc7bdpgCJMBDB.$TRBsboYscXsKPv57IHnKuy1BzLhuejJgft17s07ZQRSsgFhPI9QLPX6Spt4AiND4TaolQAR8FzMV2Osf2dhj10 
 #Use this line if creating an Edge Installer ISO that includes a local ostree commit
 #ostreesetup --osname=rhel --url=file:///ostree/repo --ref=rhel/9/x86_64/edge --nogpg
 #Use this to fetch from a remote URL
-ostreesetup --osname=rhel --url=http://[YOUR_SERVER_IP:PORT]/repo --ref=rhel/9/x86_64/edge --nogpg
+ostreesetup --osname=rhel --url=http://192.168.0.116:30239/repo --ref=rhel/9/x86_64/edge --nogpg
 
 %post
 #Default to graphical boot target
@@ -30,17 +30,31 @@ Session=gnome-kiosk-script
 SystemAccount=false
 EOF
 
+#Add url environment variable
+cat >> /home/kiosk/.bashrc << 'EOF'
+export KIOSK_URL=http://`ip -br a | grep -oP 'br-ex\s+UNKNOWN\s+\K[0-9.]+'`:30000
+EOF
+
 #Configure the kiosk script to run firefox in kiosk mode and display our example URL
 mkdir -p /home/kiosk/.local/bin/
 cat > /home/kiosk/.local/bin/gnome-kiosk-script << 'EOF'
 #!/bin/sh
+. ~/.bashrc
 while true; do
-    firefox -kiosk https://voyage.kiosk.fr/
+    /usr/bin/google/chrome/chrome --password-store=basic --no-default-browser-check --no-first-run --ash-no-nudges --disable-search-engine-choice-screen -kiosk   ${KIOSK_URL}
 done
 EOF
 
 #Ensure the files are owned by our unprivileged user and the script is executable 
-chown -R 1000:1000 /home/kiosk
-chmod 755 /home/kiosk/.local/bin/gnome-kiosk-script
+chown -R 1001:1001 /home/kiosk
+chmod 555 /home/kiosk/.local/bin/gnome-kiosk-script
+
+/etc/crio/openshift-pull-secret
+
+cat > /etc/crio/openshift-pull-secret << 'EOF'
+<YOUR_PULL_SECRET>
+EOF
+
+
 
 %end

@@ -1,0 +1,69 @@
+name = "kiosk"
+description = "Example Kiosk"
+version = "0.0.8"
+modules = []
+groups = []
+
+[[packages]]
+name = "gdm"
+version = "*"
+
+[[packages]]
+name = "gnome-kiosk"
+version = "*"
+
+[[packages]]
+name = "gnome-kiosk-script-session"
+version = "*"
+
+[[packages]]
+name = "firefox"
+version = "*"
+
+[[packages]]
+name = "google-chrome-stable-119.0.6045.199-1"
+version = "*"
+
+[[packages]]
+name = "cockpit"
+
+[[packages]]
+name = "microshift"
+version = "*"
+
+[[packages]]
+name = "cockpit-system"
+
+
+[customizations]
+hostname = "kiosk.local"
+
+[customizations.services]
+enabled = ["cockpit.socket", "sshd", "microshift"]
+#disabled = ["postfix", "telnetd"]
+
+[customizations.timezone]
+timezone = "Europe/Paris"
+ntpservers = ["0.fr.pool.ntp.org", "1.fr.pool.ntp.org"]
+
+[customizations.locale]
+languages = ["fr_FR.UTF-8"]
+keyboard = "fr"
+
+#22 ssh / 9090 cockpit / 6443 microshift
+[customizations.firewall]
+ports = ["22:tcp", "30000:tcp", "9090:tcp", "6443:tcp"]
+
+[[customizations.user]]
+name = "kiosk"
+description = "kiosk"
+password = '<password hash obatained with:        python3 -c 'import crypt,getpass;pw=getpass.getpass();print(crypt.crypt(pw) if (pw==getpass.getpass("Confirm: ")) else exit())'       >'
+
+[[customizations.user]]
+name = "admin"
+description = "admin"
+password = '<password hash obatained with:        python3 -c 'import crypt,getpass;pw=getpass.getpass();print(crypt.crypt(pw) if (pw==getpass.getpass("Confirm: ")) else exit())'       >'
+key = "<ssh public key>"
+home = "/home/admin/"
+shell = "/usr/bin/bash"
+groups = ["users", "wheel"]
