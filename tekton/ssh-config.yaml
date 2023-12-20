@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: os-builder-ssh-config
+  namespace: os-builder
+type: kubernetes.io/ssh-auth
+stringData:
+  # Either specify StrictHostKeyChecking=no
+  config: |
+    Host *
+        StrictHostKeyChecking no
+  # Or provide a known_hosts file
+  known_hosts: |
+    os-builder.acme.tld ssh-ed25519 REDACTED
+    os-builder.acme.tld ssh-rsa REDACTED
+    os-builder.acme.tld ecdsa-sha2-nistp256 REDACTED
+  # Private key used to authenticate
+  ssh-privatekey: |
+    -----BEGIN OPENSSH PRIVATE KEY-----
+    REDACTED
+    -----END OPENSSH PRIVATE KEY-----
