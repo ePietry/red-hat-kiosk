@@ -1,0 +1,145 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    kubernetes.io/metadata.name: os-builder
+  name: os-builder
+spec:
+  finalizers:
+  - kubernetes
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  labels:
+    app: ssh-client
+  name: ssh-client
+  namespace: os-builder
+spec:
+  lookupPolicy:
+    local: false
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  labels:
+    app: ssh-client
+  name: ubi9-minimal
+  namespace: os-builder
+spec:
+  lookupPolicy:
+    local: false
+  tags:
+    - name: '9.3'
+      from:
+        kind: DockerImage
+        name: >-
+          registry.access.redhat.com/ubi9/ubi-minimal:9.3
+      generation: 1
+      importPolicy:
+        scheduled: true
+        importMode: Legacy
+      referencePolicy:
+        type: Source
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  labels:
+    app: ssh-client
+  name: ssh-client
+  namespace: os-builder
+spec:
+  failedBuildsHistoryLimit: 5
+  nodeSelector: null
+  output:
+    to:
+      kind: ImageStreamTag
+      name: ssh-client:latest
+  postCommit: {}
+  resources: {}
+  runPolicy: Serial
+  source:
+    dockerfile: |-
+      FROM registry.access.redhat.com/ubi9/ubi-minimal:9.3
+      RUN microdnf install -y openssh-clients \
+       && microdnf clean all \
+       && useradd -m tekton
+      USER tekton
+  strategy:
+    dockerStrategy:
+      from:
+        kind: ImageStreamTag
+        name: ubi9-minimal:9.3
+        namespace: os-builder
+  successfulBuildsHistoryLimit: 5
+  triggers:
+  - type: ConfigChange
+  - imageChange: {}
+    type: ImageChange
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: ssh-client
+  namespace: os-builder
+spec:
+  params:
+  - name: sshKey
+    type: string
+    default: ssh-privatekey
+  - name: sshUsername
+    type: string
+  - name: sshHostname
+    type: string
+  - name: sshCommand
+    type: string
+  volumes:
+  - name: ssh
+    secret:
+      secretName: os-builder-ssh-config
+      defaultMode: 0600
+  steps:
+  - name: ssh
+    image: image-registry.openshift-image-registry.svc:5000/os-builder/ssh-client:latest
+    workingDir: /home/tekton
+    volumeMounts:
+    - name: ssh
+      mountPath: /home/tekton/.ssh
+    env:
+    - name: SSH_USERNAME
+      value: "$(params.sshUsername)"
+    - name: SSH_KEY
+      value: "$(params.sshKey)"
+    - name: SSH_HOSTNAME
+      value: "$(params.sshHostname)"
+    - name: SSH_COMMAND
+      value: "$(params.sshCommand)"
+    script: |
+      #!/bin/bash
+      set -Eeuo pipefail
+
+      echo "========================================================="
+      echo " Executing OS Builder on $SSH_HOSTNAME"
+      echo "========================================================="
+      echo
+
+      ssh -i "~/.ssh/$SSH_KEY" "$SSH_USERNAME@$SSH_HOSTNAME" "$SSH_COMMAND"
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: os-builder
+  namespace: os-builder
+spec:
+  tasks:
+  - name: ssh-client
+    params:
+    - name: sshUsername
+      value: "john"
+    - name: sshHostname
+      value: "os-builder.acme.tld"
+    - name: sshCommand
+      value: "/home/john/build.sh"
+    taskRef:
+      name: ssh-client
