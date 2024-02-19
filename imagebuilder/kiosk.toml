@@ -21,7 +21,7 @@ name = "firefox"
 version = "*"
 
 [[packages]]
-name = "google-chrome-stable-119.0.6045.199-1"
+name = "google-chrome-stable"
 version = "*"
 
 [[packages]]
@@ -57,13 +57,13 @@ ports = ["22:tcp", "30000:tcp", "9090:tcp", "6443:tcp"]
 [[customizations.user]]
 name = "kiosk"
 description = "kiosk"
-password = '<password hash obatained with:        python3 -c 'import crypt,getpass;pw=getpass.getpass();print(crypt.crypt(pw) if (pw==getpass.getpass("Confirm: ")) else exit())'       >'
+password = '__KIOSK_PASSWORD__'
 
 [[customizations.user]]
 name = "admin"
 description = "admin"
-password = '<password hash obatained with:        python3 -c 'import crypt,getpass;pw=getpass.getpass();print(crypt.crypt(pw) if (pw==getpass.getpass("Confirm: ")) else exit())'       >'
-key = "<ssh public key>"
+password = '__ADMIN_PASSWORD__'
+key = "__ADMIN_SSH_PUBLIC_KEY__"
 home = "/home/admin/"
 shell = "/usr/bin/bash"
 groups = ["users", "wheel"]
