@@ -1,6 +1,6 @@
 # Local development
 
-## Create a RHEL 9 Virtual Machine
+## Create a RHEL 9 Virtual Machine to play with os-builder and microshift
 
 Pre-requisites :
 - Fedora 39 [with Libvirt installed](https://docs.fedoraproject.org/en-US/quick-docs/virtualization-getting-started/)
@@ -51,8 +51,8 @@ sudo cloud-localds /var/lib/libvirt/images/rhel9/cloud-init.iso user-data.yaml
 
 sudo virt-install --name rhel9 --autostart --noautoconsole --cpu host-passthrough \
              --vcpus 4 --ram 8192 --os-variant rhel9.3 \
-             --disk path=/var/lib/libvirt/images/rhel9/rhel9.qcow2,backing_store=/var/lib/libvirt/images/base-images/rhel-9.3-x86_64-kvm.qcow2,size=20 \
-             --disk path=/var/lib/libvirt/images/rhel9/rhel9.qcow2,size=20 \
+             --disk path=/var/lib/libvirt/images/rhel9/rhel9.qcow2,backing_store=/var/lib/libvirt/images/base-images/rhel-9.3-x86_64-kvm.qcow2,size=100 \
+             --disk path=/var/lib/libvirt/images/rhel9/data.qcow2,size=20 \
              --network network=default \
              --console pty,target.type=virtio --serial pty --import \
              --disk path=/var/lib/libvirt/images/rhel9/cloud-init.iso,readonly=on \
@@ -63,7 +63,10 @@ sudo virsh console rhel9
 
 Create a PV and a VG for Microshift.
 
-```
+```sh
 sudo pvcreate /dev/vdb
 sudo vgcreate data /dev/vdb
 ```
+
+## Create a VM to install RHEL for Edge
+
