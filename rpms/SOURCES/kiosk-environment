@@ -1,0 +1,1 @@
+export KIOSK_URL=http://`ip -br a | grep -oP 'br-ex\s+UNKNOWN\s+\K[0-9.]+'`:30000

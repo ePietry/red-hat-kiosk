@@ -5,23 +5,7 @@ modules = []
 groups = []
 
 [[packages]]
-name = "gdm"
-version = "*"
-
-[[packages]]
-name = "gnome-kiosk"
-version = "*"
-
-[[packages]]
-name = "gnome-kiosk-script-session"
-version = "*"
-
-[[packages]]
-name = "firefox"
-version = "*"
-
-[[packages]]
-name = "google-chrome-stable"
+name = "kiosk-config"
 version = "*"
 
 [[packages]]
@@ -40,7 +24,6 @@ hostname = "kiosk.local"
 
 [customizations.services]
 enabled = ["cockpit.socket", "sshd", "microshift"]
-#disabled = ["postfix", "telnetd"]
 
 [customizations.timezone]
 timezone = "Europe/Paris"

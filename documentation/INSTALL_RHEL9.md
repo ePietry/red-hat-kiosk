@@ -59,31 +59,47 @@ sudo firewall-cmd --permanent --add-port={80/tcp,443/tcp}
 sudo firewall-cmd --reload
 sudo mkdir -p /var/www
 sudo restorecon -Rv /var/www
-sudo sed -i.bak 's|/usr/share/nginx/html|/var/www|g' /etc/nginx/nginx.conf
+sudo sed -i.${EPOCHREALTIME:-bak} 's|/usr/share/nginx/html|/var/www|g' /etc/nginx/nginx.conf
 sudo systemctl restart nginx.service
 ```
 
-## Rebuild of Google Chrome
+## Build the RPMS
+
+Pre-requisites
 
 ```sh
-sudo dnf install -y git rpm-build
-sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
-sudo dnf install -y rpmrebuild
-cd "$GIT_REPO_CLONE/chrome_repackage"
-curl -s -Lo google-chrome-stable_current_x86_64.rpm https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
-rpmrebuild -s google-chrome-stable.spec -p google-chrome-stable_current_x86_64.rpm
-rpm2cpio google-chrome-stable_current_x86_64.rpm | cpio -idmv
-mv opt/google/ usr/bin/
-cd usr/bin/
-rm -f google-chrome-stable
-ln -s google/chrome/google-chrome google-chrome-stable
-ln -s google/chrome/google-chrome chrome
-cd ../..
-RPM=$(rpm -q google-chrome-stable_current_x86_64.rpm)
+sudo dnf install -y git rpm-build rpmdevtools
+rm $HOME/rpmbuild
+ln -sf "$GIT_REPO_CLONE/rpms" $HOME/rpmbuild
+```
+
+Build the Kiosk Configuration RPM
+
+```sh
+spectool -g -R $HOME/rpmbuild/SPECS/kiosk-config.spec
+rpmbuild -ba $HOME/rpmbuild/SPECS/kiosk-config.spec
+```
+
+Rebuild the Google Chrome RPM
+
+```sh
+mkdir $HOME/rpmbuild/VENDOR
+curl -s -Lo $HOME/rpmbuild/VENDOR/google-chrome-stable_current_x86_64.rpm https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
+rpmrebuild -s $HOME/rpmbuild/SPECS/google-chrome-stable.spec -p $HOME/rpmbuild/VENDOR/google-chrome-stable_current_x86_64.rpm
+RPM=$(rpm -q $HOME/rpmbuild/VENDOR/google-chrome-stable_current_x86_64.rpm)
 mkdir -p $HOME/rpmbuild/BUILDROOT/$RPM/
-for i in etc usr; do cp -r $i $HOME/rpmbuild/BUILDROOT/$RPM/; done
-sed -i.bak 's|/opt/google|/usr/bin/google|g' google-chrome-stable.spec
-rpmbuild -bb google-chrome-stable.spec
+rpm2cpio $HOME/rpmbuild/VENDOR/google-chrome-stable_current_x86_64.rpm | cpio -idmv -D $HOME/rpmbuild/BUILDROOT/$RPM/
+(
+  set -Eeuo pipefail
+  cd $HOME/rpmbuild/BUILDROOT/$RPM/
+  mv opt/google/ usr/bin/
+  cd usr/bin/
+  rm -f google-chrome-stable
+  ln -s google/chrome/google-chrome google-chrome-stable
+  ln -s google/chrome/google-chrome chrome
+) || echo 'Repackaging failed!'
+sed -i.${EPOCHREALTIME:-bak} 's|/opt/google|/usr/bin/google|g' $HOME/rpmbuild/SPECS/google-chrome-stable.spec
+rpmbuild -bb $HOME/rpmbuild/SPECS/google-chrome-stable.spec
 ls -l $HOME/rpmbuild/RPMS/x86_64/
 ```
 
@@ -109,18 +125,25 @@ baseurl = file://$REPO_LOCATION
 enabled = 1  
 gpgcheck = 0
 EOF
-sudo dnf info google-chrome-stable
+```
+
+Verify all packages are present.
+
+```sh
+sudo dnf clean all
+sudo dnf info kiosk-config google-chrome-stable
 ```
 
 ## Blueprint preparation
 
 Customize the **kiosk** and **admin** user password if desired.
+Set the **admin** user SSH public key (if it's not you).
 
 ```sh
-KIOSK_PASSWORD="$(openssl rand -base64 9)"
-echo "Kiosk password is '$KIOSK_PASSWORD'"
 ADMIN_PASSWORD="$(openssl rand -base64 9)"
 echo "Admin password is '$ADMIN_PASSWORD'"
+ADMIN_SSH_PUBLIC_KEY="$(ssh-add -L | head -n 1)"
+echo "Admin SSH public key: $ADMIN_SSH_PUBLIC_KEY"
 ```
 
 Prepare the os-builder blueprint.
@@ -130,13 +153,9 @@ sudo subscription-manager repos --enable rhocp-4.14-for-rhel-9-$(uname -m)-rpms 
 sudo dnf info microshift
 sudo dnf install -y mkpasswd podman
 cd "$GIT_REPO_CLONE/imagebuilder"
-KIOSK_PASSWORD_HASH="$(mkpasswd -m bcrypt "$KIOSK_PASSWORD")"
 ADMIN_PASSWORD_HASH="$(mkpasswd -m bcrypt "$ADMIN_PASSWORD")"
-sed -i.orig1 "s|__KIOSK_PASSWORD__|$KIOSK_PASSWORD_HASH|" kiosk.toml
-sed -i.orig2 "s|__ADMIN_PASSWORD__|$ADMIN_PASSWORD_HASH|" kiosk.toml
-ADMIN_SSH_PUBLIC_KEY="$(ssh-add -L | head -n 1)"
-echo "Admin SSH public key: $ADMIN_SSH_PUBLIC_KEY"
-sed -i.orig3 "s|__ADMIN_SSH_PUBLIC_KEY__|$ADMIN_SSH_PUBLIC_KEY|" kiosk.toml
+sed -i.${EPOCHREALTIME:-bak} "s|__ADMIN_PASSWORD__|$ADMIN_PASSWORD_HASH|" kiosk.toml
+sed -i.${EPOCHREALTIME:-bak} "s|__ADMIN_SSH_PUBLIC_KEY__|$ADMIN_SSH_PUBLIC_KEY|" kiosk.toml
 composer-cli sources add /dev/fd/0 <<EOF
 check_gpg = false
 check_ssl = false
@@ -166,6 +185,16 @@ check_ssl = true
 system = false
 rhsm = true
 EOF
+composer-cli sources add /dev/fd/0 <<EOF
+id = "epel"
+name = "Extra Packages for Enterprise Linux"
+type = "yum-baseurl"
+url = "http://mirror.in2p3.fr/pub/epel/9/Everything/x86_64/"
+check_gpg = false
+check_ssl = false
+system = false
+rhsm = false
+EOF
 composer-cli blueprints push kiosk.toml
 ```
 
@@ -186,6 +215,7 @@ Download the ostree server and run it.
 CONTAINER_IMAGE_FILE="$(composer-cli compose image "${BUILDID}")"
 IMAGEID="$(podman load < "${BUILDID}-container.tar" | grep -o -P '(?<=sha256[@:])[a-z0-9]*')"
 echo "Using image with id = $IMAGEID"
+podman rm -i minimal-microshift-server
 podman run -d --name=minimal-microshift-server -p 8085:8080 ${IMAGEID}
 ```
 
@@ -208,31 +238,23 @@ composer-cli compose image "${BUILDID}"
 
 ## Prepare the Kickstart script
 
-Customize the **root** user password if desired.
+[Generate a pull secret](https://console.redhat.com/openshift/install/pull-secret) and set the `MICROSHIFT_PULL_SECRET` variable.
 
 ```sh
-ROOT_PASSWORD="$(openssl rand -base64 9)"
-echo "Root password is '$ROOT_PASSWORD'"
-```
-
-[Generate a registry token](https://access.redhat.com/terms-based-registry/) and set the `MICROSHIFT_PULL_SECRET` variable.
-
-```sh
-MICROSHIFT_PULL_SECRET="1.2.3" # Generated by https://access.redhat.com/terms-based-registry/
+MICROSHIFT_PULL_SECRET='' # Generate one on https://console.redhat.com/openshift/install/pull-secret
 ```
 
 Prepare the Kickstart script.
 
 ```sh
 cd "$GIT_REPO_CLONE/imagebuilder"
-__ROOT_PASSWORD_HASH__="$(mkpasswd -m bcrypt "$ROOT_PASSWORD")"
-sed -i.orig1 "s|__MICROSHIFT_PULL_SECRET__|$MICROSHIFT_PULL_SECRET|" kiosk.ks
-sed -i.orig2 "s|__ROOT_PASSWORD_HASH__|$__ROOT_PASSWORD_HASH__|" kiosk.ks
+sed -i.${EPOCHREALTIME:-bak} "s|__MICROSHIFT_PULL_SECRET__|$MICROSHIFT_PULL_SECRET|" kiosk.ks
 ```
 
 ## Inject the Kickstart in the ISO
 
 ```sh
-sudo dnf install -y lorax
-mkksiso kiosk.ks "${BUILDID}-installer.iso" kiosk.iso
+sudo dnf install -y lorax pykickstart
+ksvalidator kiosk.ks || echo "Kickstart has errors, please fix them!"
+rm -f kiosk.iso && mkksiso -r "inst.ks inst.stage2" --ks kiosk.ks "${BUILDID}-installer.iso" kiosk.iso
 ```

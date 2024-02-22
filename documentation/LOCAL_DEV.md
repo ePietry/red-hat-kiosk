@@ -68,5 +68,47 @@ sudo pvcreate /dev/vdb
 sudo vgcreate data /dev/vdb
 ```
 
-## Create a VM to install RHEL for Edge
+## Utility script that creates a VM to install RHEL for Edge
 
+```sh
+#!/bin/bash
+
+set -Eeuo pipefail
+
+DOMAIN="kiosk"
+BASE_IMAGE_URL="your-user@rhel9-vm:red-hat-kiosk/imagebuilder/kiosk.iso"
+BASE_IMAGE_FILENAME="$(basename "$BASE_IMAGE_URL")"
+OS_VARIANT="rhel9.3"
+
+virsh destroy "$DOMAIN" || true
+virsh undefine "$DOMAIN" --nvram || true
+
+rm -rf "/var/lib/libvirt/images/$DOMAIN/"
+mkdir -p "/var/lib/libvirt/images/$DOMAIN"
+
+scp "$BASE_IMAGE_URL" "/var/lib/libvirt/images/$DOMAIN/install.iso"
+
+virt-install --name "$DOMAIN" --autostart --cpu host-passthrough \
+             --vcpus 2 --ram 4096 --os-variant "$OS_VARIANT" \
+             --disk "path=/var/lib/libvirt/images/$DOMAIN/os.qcow2,size=20" \
+             --disk "path=/var/lib/libvirt/images/$DOMAIN/data.qcow2,size=100" \
+             --network network=default \
+             --console pty,target.type=virtio --serial pty \
+             --cdrom "/var/lib/libvirt/images/$DOMAIN/install.iso" \
+             --boot uefi
+```
+
+Use it like follow :
+
+```sh
+eval $(ssh-agent)
+ssh-add
+sudo --preserve-env=SSH_AUTH_SOCK ./kiosk.sh
+```
+
+## Use Microshift
+
+```sh
+export KUBECONFIG=/var/lib/microshift/resources/kubeadmin/kubeconfig
+oc get nodes
+```
