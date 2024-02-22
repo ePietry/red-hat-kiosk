@@ -1,6 +1,7 @@
 lang fr_FR.UTF-8
 keyboard fr
-timezone UTC --utc --ntpservers=rhel.pool.ntp.org
+timezone UTC --utc
+timesource --ntp-server=rhel.pool.ntp.org
 reboot
 text
 
