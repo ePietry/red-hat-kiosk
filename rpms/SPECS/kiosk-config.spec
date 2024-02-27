@@ -68,7 +68,7 @@ install -m 0644 -D user-template %{buildroot}/etc/accountsservice/user-templates
 
 %pre
 getent group kiosk >/dev/null 2>&1 || groupadd kiosk
-getent passwd kiosk >/dev/null 2>&1 || useradd -N -g kiosk -d /home/kiosk -m kiosk
+getent passwd kiosk >/dev/null 2>&1 || useradd -r -N -g kiosk -d /home/kiosk -m kiosk
 
 %post
 %systemd_user_post com.redhat.Kiosk.SampleApp.service

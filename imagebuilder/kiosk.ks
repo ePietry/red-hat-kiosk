@@ -44,6 +44,18 @@ part pv.02 --size=1 --grow --ondisk=vdb
 volgroup data pv.02
 
 ##
+## Alternative partitioning on only one disk
+##
+#zerombr
+#clearpart --all --initlabel
+#reqpart --add-boot
+#part pv.01 --size=10G --ondisk=sda
+#volgroup system pv.01
+#logvol /  --fstype="xfs" --size=1 --grow --name=root --vgname=system
+#part pv.02 --size=1 --grow --ondisk=sda
+#volgroup data pv.02
+
+##
 ## Network configuration
 ##
 

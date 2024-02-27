@@ -9,5 +9,5 @@ id='${ID}'
 version-id='${VERSION_ID}'
 
 [User]
-Session=gnome
+Session=redhat-kiosk-sampleapp
 Icon=${HOME}/.face

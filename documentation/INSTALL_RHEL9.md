@@ -215,8 +215,9 @@ Download the ostree server and run it.
 CONTAINER_IMAGE_FILE="$(composer-cli compose image "${BUILDID}")"
 IMAGEID="$(podman load < "${BUILDID}-container.tar" | grep -o -P '(?<=sha256[@:])[a-z0-9]*')"
 echo "Using image with id = $IMAGEID"
+podman stop -i minimal-microshift-server
 podman rm -i minimal-microshift-server
-podman run -d --name=minimal-microshift-server -p 8085:8080 ${IMAGEID}
+podman run -d --rm --name=minimal-microshift-server -p 8085:8080 ${IMAGEID}
 ```
 
 ## Build the ISO
@@ -257,4 +258,6 @@ sed -i.${EPOCHREALTIME:-bak} "s|__MICROSHIFT_PULL_SECRET__|$MICROSHIFT_PULL_SECR
 sudo dnf install -y lorax pykickstart
 ksvalidator kiosk.ks || echo "Kickstart has errors, please fix them!"
 rm -f kiosk.iso && mkksiso -r "inst.ks inst.stage2" --ks kiosk.ks "${BUILDID}-installer.iso" kiosk.iso
+ls -lh kiosk.iso
+file kiosk.iso
 ```
