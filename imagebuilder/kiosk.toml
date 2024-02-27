@@ -57,12 +57,12 @@ ports = ["22:tcp", "30000:tcp", "9090:tcp", "6443:tcp"]
 [[customizations.user]]
 name = "kiosk"
 description = "kiosk"
-password = '<password hash obatained with:        python3 -c 'import crypt,getpass;pw=getpass.getpass();print(crypt.crypt(pw) if (pw==getpass.getpass("Confirm: ")) else exit())'       >'
+password = '$6$h272rrOc/h2NhKeZ$ubHaiFRAnZgPyjkf4ak.fZLmvmxdZa69qNsDIvWvAUs1ccBFFGMV/I4Uua8W3EAGxyQpmhaCNa671Ecyxh0kw.'
 
 [[customizations.user]]
 name = "admin"
 description = "admin"
-password = '<password hash obatained with:        python3 -c 'import crypt,getpass;pw=getpass.getpass();print(crypt.crypt(pw) if (pw==getpass.getpass("Confirm: ")) else exit())'       >'
+password = '$6$h272rrOc/h2NhKeZ$ubHaiFRAnZgPyjkf4ak.fZLmvmxdZa69qNsDIvWvAUs1ccBFFGMV/I4Uua8W3EAGxyQpmhaCNa671Ecyxh0kw.'
 key = "<ssh public key>"
 home = "/home/admin/"
 shell = "/usr/bin/bash"
