@@ -20,9 +20,9 @@ version = "*"
 name = "firefox"
 version = "*"
 
-[[packages]]
-name = "google-chrome-stable-119.0.6045.199-1"
-version = "*"
+#[[packages]]
+#name = "google-chrome-stable-119.0.6045.199-1"
+#version = "*"
 
 [[packages]]
 name = "cockpit"
