@@ -4,6 +4,6 @@ BindsTo=gnome-session.target
 After=gnome-session.target
 
 [Service]
-ExecStart=/usr/bin/google/chrome/chrome --password-store=basic --no-default-browser-check --no-first-run --ash-no-nudges --disable-search-engine-choice-screen -kiosk
+ExecStart=/usr/bin/kiosk-app
 Restart=always
 SendSIGHUP=true

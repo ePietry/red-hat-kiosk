@@ -10,6 +10,7 @@ Source3:    redhat-kiosk-sampleapp.session
 Source4:    redhat-kiosk-sampleapp.desktop
 Source5:    com.redhat.Kiosk.SampleApp.service
 Source6:    session.conf
+Source7:    kiosk-app
 Requires(pre): shadow-utils
 Requires: gnome-kiosk
 Requires: gdm
@@ -39,6 +40,7 @@ cp %{S:3} redhat-kiosk-sampleapp.session
 cp %{S:4} redhat-kiosk-sampleapp.desktop
 cp %{S:5} com.redhat.Kiosk.SampleApp.service
 cp %{S:6} session.conf
+cp %{S:7} kiosk-app
 
 %build
 
@@ -54,6 +56,7 @@ install -m 0644 -D session.conf %{buildroot}%{_userunitdir}/gnome-session@redhat
 install -m 0755 -d %{buildroot}/etc/accountsservice/user-templates/
 install -m 0644 -D user-template %{buildroot}/etc/accountsservice/user-templates/standard
 install -m 0644 -D user-template %{buildroot}/etc/accountsservice/user-templates/administrator
+install -m 0755 -D kiosk-app %{buildroot}/usr/bin/kiosk-app
 
 %files
 %config(noreplace) %attr(0644, root, root) /etc/profile.d/kiosk.sh
@@ -65,6 +68,7 @@ install -m 0644 -D user-template %{buildroot}/etc/accountsservice/user-templates
 %attr(0644, root, root) %{_userunitdir}/gnome-session@redhat-kiosk-sampleapp.target.d/session.conf
 %config(noreplace) %attr(0644, root, root) /etc/accountsservice/user-templates/standard
 %config(noreplace) %attr(0644, root, root) /etc/accountsservice/user-templates/administrator
+%attr(0755, root, root) /usr/bin/kiosk-app
 
 %pre
 getent group kiosk >/dev/null 2>&1 || groupadd kiosk

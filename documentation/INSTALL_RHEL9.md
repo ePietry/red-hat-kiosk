@@ -50,6 +50,32 @@ cd red-hat-kiosk
 export GIT_REPO_CLONE="$PWD"
 ```
 
+## Create the container image
+
+Install podman and buildah.
+
+```sh
+sudo dnf install -y podman buildah
+```
+
+Define the target image properties.
+
+```sh
+REGISTRY="quay.io"
+IMAGE_NAME="nmasse_itix/kiosk-app"
+IMAGE_TAG="latest"
+```
+
+Build and push the image to the registry.
+
+```sh
+cd "$GIT_REPO_CLONE/application"
+podman build -t localhost/kiosk-app:latest .
+podman login "$REGISTRY"
+podman tag localhost/kiosk-app:latest "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
+podman push "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
+```
+
 ## Nginx configuration
 
 ```sh
@@ -73,11 +99,18 @@ rm $HOME/rpmbuild
 ln -sf "$GIT_REPO_CLONE/rpms" $HOME/rpmbuild
 ```
 
-Build the Kiosk Configuration RPM
+Build the `kiosk-config` RPM
 
 ```sh
 spectool -g -R $HOME/rpmbuild/SPECS/kiosk-config.spec
 rpmbuild -ba $HOME/rpmbuild/SPECS/kiosk-config.spec
+```
+
+Build the `microshift-manifests` RPM
+
+```sh
+spectool -g -R $HOME/rpmbuild/SPECS/microshift-manifests.spec
+rpmbuild -ba $HOME/rpmbuild/SPECS/microshift-manifests.spec
 ```
 
 Rebuild the Google Chrome RPM
@@ -131,7 +164,7 @@ Verify all packages are present.
 
 ```sh
 sudo dnf clean all
-sudo dnf info kiosk-config google-chrome-stable
+sudo dnf info kiosk-config google-chrome-stable microshift-manifests
 ```
 
 ## Blueprint preparation

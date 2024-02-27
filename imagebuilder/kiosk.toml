@@ -12,7 +12,7 @@ version = "*"
 name = "cockpit"
 
 [[packages]]
-name = "microshift"
+name = "microshift-manifests"
 version = "*"
 
 [[packages]]

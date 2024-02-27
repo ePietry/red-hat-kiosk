@@ -1,0 +1,133 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    kubernetes.io/metadata.name: kiosk-app
+  name: kiosk-app
+spec:
+  finalizers:
+  - kubernetes
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: haproxy
+  namespace: kiosk-app
+data:
+  haproxy.cfg: |
+    global
+      log stdout format raw local0
+      maxconn     4000
+
+    defaults
+        mode                    http
+        log                     global
+        option                  dontlognull
+        option                  redispatch
+        retries                 3
+        timeout http-request    10s
+        timeout queue           1m
+        timeout connect         10s
+        timeout client          1m
+        timeout server          1m
+        timeout http-keep-alive 10s
+        timeout check           10s
+        maxconn                 3000
+
+    frontend webserver
+      bind 0.0.0.0:8080
+      acl main_service_failed nbsrv(appserver_main) le 0
+      use_backend appserver_backup if main_service_failed
+      default_backend appserver_main
+
+    backend appserver_main
+      http-request set-header Host ipinfo.io
+      balance roundrobin
+      # 34.117.186.192 is one of the IP Addresses serving the website "ipinfo.io"
+      server svc-main1 34.117.186.192:80 check
+
+    backend appserver_backup 
+      http-request set-header Host kiosk-app.kiosk-app.svc.cluster.local
+      balance roundrobin
+      server svc-backup1 kiosk-app:5000 check
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: haproxy
+  namespace: kiosk-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: haproxy
+  template:
+    metadata:
+      labels:
+        app: haproxy
+    spec:
+      containers:
+      - name: haproxy
+        image: haproxy:latest
+        volumeMounts:
+        - name: config-volume
+          mountPath: /usr/local/etc/haproxy/haproxy.cfg
+          subPath: haproxy.cfg
+        ports:
+        - containerPort: 8080
+      volumes:
+      - name: config-volume
+        configMap:
+          name: haproxy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: haproxy
+  namespace: kiosk-app
+spec:
+  type: ClusterIP
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  clusterIP: 10.43.191.230
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: haproxy
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kiosk-app
+  namespace: kiosk-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kiosk-app
+  template:
+    metadata:
+      labels:
+        app: kiosk-app
+    spec:
+      containers:
+      - name: kiosk-app
+        image: quay.io/nmasse_itix/kiosk-app:latest
+        ports:
+        - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kiosk-app
+  namespace: kiosk-app
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5000
+    targetPort: 5000
+  selector:
+    app: kiosk-app
