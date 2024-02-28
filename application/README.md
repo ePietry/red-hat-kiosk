@@ -1,5 +1,7 @@
 # Sample kiosk application
 
+## Local version
+
 Build the container image.
 
 ```sh
@@ -30,3 +32,7 @@ Publish it to the registry.
 podman tag localhost/kiosk-app:latest quay.io/nmasse_itix/kiosk-app:latest
 podman push quay.io/nmasse_itix/kiosk-app:latest
 ```
+
+## Online version
+
+The online version is deployed using [Netlify](https://app.netlify.com/) at [redhat-kiosk-app.netlify.app](https://redhat-kiosk-app.netlify.app/).
