@@ -8,6 +8,7 @@ groups = []
 name = "kiosk-config"
 version = "*"
 
+
 [[packages]]
 name = "cockpit"
 
@@ -37,6 +38,10 @@ keyboard = "fr"
 [customizations.firewall]
 ports = ["22:tcp", "30000:tcp", "9090:tcp", "6443:tcp"]
 
+[[customizations.filesystem]]
+mountpoint = "/opt"
+size = 1073741824
+
 [[customizations.user]]
 name = "kiosk"
 description = "kiosk"
@@ -45,7 +50,6 @@ password = '__KIOSK_PASSWORD__'
 [[customizations.user]]
 name = "admin"
 description = "admin"
-password = '__ADMIN_PASSWORD__'
 key = "__ADMIN_SSH_PUBLIC_KEY__"
 home = "/home/admin/"
 shell = "/usr/bin/bash"
