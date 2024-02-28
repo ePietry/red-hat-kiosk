@@ -9,13 +9,13 @@ podman build -t localhost/kiosk-app:latest .
 Run the container image.
 
 ```sh
-podman run -it --rm --name kiosk-app -p 5000:5000 localhost/kiosk-app:latest
+podman run -it --rm --name kiosk-app -p 8080:8080 localhost/kiosk-app:latest
 ```
 
 Test it.
 
 ```sh
-curl -I http://localhost:5000/
+curl -I http://localhost:8080/
 ```
 
 Login to the registry.
