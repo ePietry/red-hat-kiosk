@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -Eeuo pipefail
+
+while ! curl -sf --connect-timeout 5 --expect100-timeout 5 "$KIOSK_URL"; do
+    echo "Waiting for the Kiosk APP to become available..."
+    sleep 10
+done
+
+exec /usr/bin/google/chrome/chrome --password-store=basic --no-default-browser-check --no-first-run --ash-no-nudges --disable-search-engine-choice-screen -kiosk "$KIOSK_URL"

@@ -1,1 +1,2 @@
-# red-hat-kiosk
+# A Kiosk based on Red Hat Device Edge and Microshift
+

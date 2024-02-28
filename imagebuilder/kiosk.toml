@@ -5,30 +5,15 @@ modules = []
 groups = []
 
 [[packages]]
-name = "gdm"
+name = "kiosk-config"
 version = "*"
 
-[[packages]]
-name = "gnome-kiosk"
-version = "*"
-
-[[packages]]
-name = "gnome-kiosk-script-session"
-version = "*"
-
-[[packages]]
-name = "firefox"
-version = "*"
-
-#[[packages]]
-#name = "google-chrome-stable-119.0.6045.199-1"
-#version = "*"
 
 [[packages]]
 name = "cockpit"
 
 [[packages]]
-name = "microshift"
+name = "microshift-manifests"
 version = "*"
 
 [[packages]]
@@ -40,7 +25,6 @@ hostname = "kiosk.local"
 
 [customizations.services]
 enabled = ["cockpit.socket", "sshd", "microshift"]
-#disabled = ["postfix", "telnetd"]
 
 [customizations.timezone]
 timezone = "Europe/Paris"
@@ -61,13 +45,12 @@ size = 1073741824
 [[customizations.user]]
 name = "kiosk"
 description = "kiosk"
-password = '$6$h272rrOc/h2NhKeZ$ubHaiFRAnZgPyjkf4ak.fZLmvmxdZa69qNsDIvWvAUs1ccBFFGMV/I4Uua8W3EAGxyQpmhaCNa671Ecyxh0kw.'
+password = '__KIOSK_PASSWORD__'
 
 [[customizations.user]]
 name = "admin"
 description = "admin"
-password = '$6$h272rrOc/h2NhKeZ$ubHaiFRAnZgPyjkf4ak.fZLmvmxdZa69qNsDIvWvAUs1ccBFFGMV/I4Uua8W3EAGxyQpmhaCNa671Ecyxh0kw.'
-key = "<ssh public key>"
+key = "__ADMIN_SSH_PUBLIC_KEY__"
 home = "/home/admin/"
 shell = "/usr/bin/bash"
 groups = ["users", "wheel"]
