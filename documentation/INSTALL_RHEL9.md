@@ -78,6 +78,8 @@ podman push "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
 
 ## Nginx configuration
 
+Install and configure nginx.
+
 ```sh
 sudo dnf install -y nginx
 sudo systemctl enable --now nginx.service
@@ -89,13 +91,76 @@ sudo sed -i.${EPOCHREALTIME:-bak} 's|/usr/share/nginx/html|/var/www|g' /etc/ngin
 sudo systemctl restart nginx.service
 ```
 
+Find the IP address of the current server.
+
+```sh
+MYIP="$(ip -4 -br addr show scope global | awk 'NR == 1 { split($3, parts, "/"); print parts[1]; }')"
+```
+
+## Create the initial ostree repo
+
+Define two helper functions.
+
+```sh
+function compose_status () {
+  composer-cli compose info "$1" | awk 'NR == 1 { print $2 }'
+}
+function wait_for_compose () {
+  status="$(compose_status "$1")"
+
+  while [ "$status" == "RUNNING" ]; do
+    echo "Waiting for build $1 to finish..."
+    sleep 5
+    status="$(compose_status "$1")"
+  done
+
+  echo "Build status of $1 is: $status."
+  if [ "$status" == "FINISHED" ]; then
+    return 0
+  fi
+
+  return 1
+}
+```
+
+Bootstrap the initial ostree repository with ref = `rhel/9/x86_64/edge`.
+
+```sh
+composer-cli blueprints push /dev/fd/0 <<EOF
+name = "minimal-rhel9"
+description = "minimal blueprint for ostree commit"
+version = "1.1.0"
+modules = []
+groups = []
+distro = "rhel-93"
+EOF
+BUILDID=$(composer-cli compose start-ostree minimal-rhel9 edge-commit | awk '{print $2}')
+echo "Build $BUILDID is running..."
+wait_for_compose "$BUILDID"
+composer-cli compose image "$BUILDID"
+sudo rm -rf /var/www/repo
+sudo tar -xf "$BUILDID-commit.tar" -C /var/www
+ostree --repo=/var/www/repo refs
+```
+
+Create an empty commit with ref = `empty`.
+
+> [!TIP]
+> This is an optimization in order to trim 800 MB from the installer ISO image.
+
+```sh
+sudo mkdir -p /tmp/empty-tree
+sudo ostree --repo=/var/www/repo commit -b "empty" --tree=dir=/tmp/empty-tree
+ostree --repo=/var/www/repo refs
+```
+
 ## Build the RPMS
 
 Pre-requisites
 
 ```sh
 sudo dnf install -y git rpm-build rpmdevtools
-rm $HOME/rpmbuild
+rm -f $HOME/rpmbuild
 ln -sf "$GIT_REPO_CLONE/rpms" $HOME/rpmbuild
 ```
 
@@ -169,7 +234,7 @@ sudo dnf info kiosk-config google-chrome-stable microshift-manifests
 
 ## Blueprint preparation
 
-Customize the **kiosk** and **admin** user password if desired.
+Customize the **admin** user password if desired.
 Set the **admin** user SSH public key (if it's not you).
 
 ```sh
@@ -233,27 +298,24 @@ composer-cli blueprints push kiosk.toml
 
 ## Ostree construction
 
-Create the ostree image.
+Create the ostree image and add it to the ostree repository with ref = `rhel/9/x86_64/edge-kiosk`.
 
 ```sh
 composer-cli blueprints depsolve kiosk
-BUILDID=$(composer-cli compose start-ostree --ref "rhel/9/$(uname -m)/edge" kiosk edge-container | awk '{print $2}')
+BUILDID=$(composer-cli compose start-ostree kiosk edge-commit --url http://$MYIP/repo --ref "rhel/9/$(uname -m)/edge-kiosk" --parent "rhel/9/$(uname -m)/edge" | awk '{print $2}')
 echo "Build $BUILDID is running..."
-composer-cli compose status
+wait_for_compose "$BUILDID"
+composer-cli compose image "${BUILDID}"
+mkdir -p "/tmp/${BUILDID}-commit"
+tar -xf "${BUILDID}-commit.tar" -C "/tmp/${BUILDID}-commit"
+sudo ostree --repo=/var/www/repo pull-local "/tmp/${BUILDID}-commit/repo"
+ostree --repo=/var/www/repo refs
+ostree --repo=/var/www/repo log rhel/9/x86_64/edge-kiosk
 ```
 
-Download the ostree server and run it.
+## Generate the Installer ISO image
 
-```sh
-CONTAINER_IMAGE_FILE="$(composer-cli compose image "${BUILDID}")"
-IMAGEID="$(podman load < "${BUILDID}-container.tar" | grep -o -P '(?<=sha256[@:])[a-z0-9]*')"
-echo "Using image with id = $IMAGEID"
-podman stop -i minimal-microshift-server
-podman rm -i minimal-microshift-server
-podman run -d --rm --name=minimal-microshift-server -p 8085:8080 ${IMAGEID}
-```
-
-## Build the ISO
+Generate the ISO image of the installer.
 
 ```sh
 composer-cli blueprints push /dev/fd/0 <<EOF
@@ -265,10 +327,14 @@ modules = []
 groups = []
 packages = []
 EOF
-BUILDID=$(composer-cli compose start-ostree --url http://localhost:8085/repo/ --ref "rhel/9/$(uname -m)/edge" microshift-installer edge-installer | awk '{print $2}')
-composer-cli compose status
+BUILDID=$(composer-cli compose start-ostree --url http://localhost/repo/ --ref empty microshift-installer edge-installer | awk '{print $2}')
+echo "Build $BUILDID is running..."
+wait_for_compose "$BUILDID"
 composer-cli compose image "${BUILDID}"
 ```
+
+> [!CAUTION]
+> While it is possible to use the stock RHEL 9.3 Boot ISO image here, there are subtle differences between the stock ISO image and the one generated here.
 
 ## Prepare the Kickstart script
 
@@ -283,6 +349,7 @@ Prepare the Kickstart script.
 ```sh
 cd "$GIT_REPO_CLONE/imagebuilder"
 sed -i.${EPOCHREALTIME:-bak} "s|__MICROSHIFT_PULL_SECRET__|$MICROSHIFT_PULL_SECRET|" kiosk.ks
+sed -i.${EPOCHREALTIME:-bak} "s|__MYIP__|$MYIP|" kiosk.ks
 ```
 
 ## Inject the Kickstart in the ISO

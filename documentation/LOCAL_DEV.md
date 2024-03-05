@@ -112,3 +112,55 @@ sudo --preserve-env=SSH_AUTH_SOCK ./kiosk.sh
 export KUBECONFIG=/var/lib/microshift/resources/kubeadmin/kubeconfig
 oc get nodes
 ```
+
+## Embed the ostree in the ISO
+
+Create the ostree image.
+
+```sh
+composer-cli blueprints depsolve kiosk
+BUILDID=$(composer-cli compose start-ostree --ref "rhel/9/$(uname -m)/edge" kiosk edge-container | awk '{print $2}')
+echo "Build $BUILDID is running..."
+wait_for_compose "$BUILDID"
+```
+
+Download the ostree server and run it.
+
+```sh
+CONTAINER_IMAGE_FILE="$(composer-cli compose image "${BUILDID}")"
+IMAGEID="$(podman load < "${BUILDID}-container.tar" | grep -o -P '(?<=sha256[@:])[a-z0-9]*')"
+echo "Using image with id = $IMAGEID"
+podman stop -i minimal-microshift-server
+podman rm -i minimal-microshift-server
+podman run -d --rm --name=minimal-microshift-server -p 8085:8080 ${IMAGEID}
+```
+
+When building the ISO :
+
+```sh
+composer-cli blueprints push /dev/fd/0 <<EOF
+name = "microshift-installer"
+
+description = ""
+version = "0.0.0"
+modules = []
+groups = []
+packages = []
+EOF
+BUILDID=$(composer-cli compose start-ostree --url http://localhost:8085/repo/ --ref "rhel/9/$(uname -m)/edge" microshift-installer edge-installer | awk '{print $2}')
+wait_for_compose "$BUILDID"
+composer-cli compose image "${BUILDID}"
+```
+
+In the Kickstart script :
+
+```
+ostreesetup --nogpg --osname=rhel --remote=edge --url=file:///run/install/repo/ostree/repo --ref=rhel/9/x86_64/edge
+```
+
+## Reclaim disk space
+
+```sh
+composer-cli compose list | awk 'NR > 1 { print $1 }' | xargs -n1 composer-cli compose delete
+rm -f $GIT_REPO_CLONE/imagebuilder/*.{iso,tar}
+```

@@ -70,10 +70,10 @@ network  --hostname=kiosk.localdomain
 ##
 
 # Use this line if creating an Edge Installer ISO that includes a local ostree commit
-ostreesetup --nogpg --osname=rhel --remote=edge --url=file:///run/install/repo/ostree/repo --ref=rhel/9/x86_64/edge
+#ostreesetup --nogpg --osname=rhel --remote=edge --url=file:///run/install/repo/ostree/repo --ref=rhel/9/x86_64/edge
 
 # Use this to fetch from a remote URL
-#ostreesetup --osname=rhel --url=http://192.168.0.116:30239/repo --ref=rhel/9/x86_64/edge --nogpg
+ostreesetup --nogpg --osname=rhel --remote=edge --url=http://__MYIP__/repo --ref=rhel/9/x86_64/edge-kiosk
 
 ##
 ## Post install scripts
@@ -88,5 +88,8 @@ chmod 600 /etc/crio/openshift-pull-secret
 # Configure the firewall with the mandatory rules for MicroShift
 firewall-offline-cmd --zone=trusted --add-source=10.42.0.0/16
 firewall-offline-cmd --zone=trusted --add-source=169.254.169.1
+
+# Do not ask password for sudo
+sed -i.post-install -e "s/^%wheel\tALL=(ALL)\tALL/%wheel  ALL=(ALL)       NOPASSWD: ALL/" /etc/sudoers
 
 %end

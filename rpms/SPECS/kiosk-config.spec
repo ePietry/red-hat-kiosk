@@ -19,6 +19,7 @@ Requires: accountsservice
 Requires(post): crudini
 Requires(preun): crudini
 BuildRequires: systemd-rpm-macros
+%systemd_requires
 ExclusiveArch: x86_64
 
 %description
@@ -71,14 +72,14 @@ install -m 0755 -D kiosk-app %{buildroot}/usr/bin/kiosk-app
 %attr(0755, root, root) /usr/bin/kiosk-app
 
 %pre
-getent group kiosk >/dev/null 2>&1 || groupadd kiosk
+getent group kiosk >/dev/null 2>&1 || groupadd -r kiosk
 getent passwd kiosk >/dev/null 2>&1 || useradd -r -N -g kiosk -d /home/kiosk -m kiosk
 
 %post
 %systemd_user_post com.redhat.Kiosk.SampleApp.service
 crudini --set /etc/gdm/custom.conf daemon AutomaticLoginEnable True
 crudini --set /etc/gdm/custom.conf daemon AutomaticLogin kiosk
-systemctl set-default graphical.target
+/usr/bin/systemctl set-default graphical.target
 
 %preun
 %systemd_user_preun com.redhat.Kiosk.SampleApp.service
