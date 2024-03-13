@@ -357,7 +357,7 @@ sed -i.${EPOCHREALTIME:-bak} "s|__MYIP__|$MYIP|" kiosk.ks
 ```sh
 sudo dnf install -y lorax pykickstart
 ksvalidator kiosk.ks || echo "Kickstart has errors, please fix them!"
-rm -f kiosk.iso && mkksiso -r "inst.ks inst.stage2" --ks kiosk.ks "${BUILDID}-installer.iso" kiosk.iso
+rm -f kiosk.iso && mkksiso -r "inst.ks" --ks kiosk.ks "${BUILDID}-installer.iso" kiosk.iso
 ls -lh kiosk.iso
 file kiosk.iso
 ```
