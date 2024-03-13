@@ -34,26 +34,19 @@ clearpart --all --initlabel
 # and add a separate /boot partition
 reqpart --add-boot
 
-# Create a PV, VG add LV for the system
-part pv.01 --size=1 --grow --ondisk=vda
-volgroup system pv.01
-logvol /  --fstype="xfs" --size=1 --grow --name=root --vgname=system
-
-# Create a PV and VG for Microshift
-part pv.02 --size=1 --grow --ondisk=vdb
-volgroup data pv.02
 
 ##
 ## Alternative partitioning on only one disk
+## /dev/disk/by-path/pci-0000:00:12.0-ata-1 instead of sda when sda is taken by the usb stick
 ##
-#zerombr
-#clearpart --all --initlabel
-#reqpart --add-boot
-#part pv.01 --size=10G --ondisk=sda
-#volgroup system pv.01
-#logvol /  --fstype="xfs" --size=1 --grow --name=root --vgname=system
-#part pv.02 --size=1 --grow --ondisk=sda
-#volgroup data pv.02
+zerombr
+clearpart --all --initlabel
+reqpart --add-boot
+part pv.01 --size=10G --ondisk=/dev/disk/by-path/pci-0000:00:12.0-ata-1
+volgroup system pv.01
+logvol /  --fstype="xfs" --size=1 --grow --name=root --vgname=system
+part pv.02 --size=1 --grow --ondisk=/dev/disk/by-path/pci-0000:00:12.0-ata-1
+volgroup data pv.02
 
 ##
 ## Network configuration
