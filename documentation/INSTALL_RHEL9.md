@@ -45,7 +45,7 @@ baseos
 ## Clone this repository
 
 ```sh
-git clone https://github.com/nmasse-itix/red-hat-kiosk.git
+git clone https://github.com/ePietry/red-hat-kiosk.git
 cd red-hat-kiosk
 export GIT_REPO_CLONE="$PWD"
 ```
