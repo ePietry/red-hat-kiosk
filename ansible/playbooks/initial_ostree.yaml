@@ -9,7 +9,7 @@
         state: directory
     - name: Copy blueprint file
       ansible.builtin.copy:
-        src: "{{ playbook_dir }}/../blueprints/blueprint.toml"
+        src: "{{ playbook_dir }}/../blueprints/{{ blueprint }}"
         dest: /tmp/blueprints/blueprint.toml
         mode: '0755'
     - name: Push a blueprint
