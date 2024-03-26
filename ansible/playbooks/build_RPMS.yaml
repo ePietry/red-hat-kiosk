@@ -9,16 +9,60 @@
           - rpm-build
           - rpmdevtools
         state: present
-    - name: Get user home directory
-      ansible.builtin.set_fact:
-        user_home_dir: "{{ lookup('env', 'HOME') }}"
+    - name: Install rpmrebuild
+      become: true
+      ansible.builtin.yum:
+        name: rpmrebuild
+        state: present
     - name: Clear directory $HOME/rpmbuild
       ansible.builtin.file:
-        path: "{{ user_home_dir }}/rpmbuild"
+        path: "{{ ansible_env.HOME }}/rpmbuild"
         state: absent
-    - name: Get user GIT_REPO_CLONE directory
-      ansible.builtin.shell: "printenv HOSTNAME"
-      register: user_git_dir
-    - name: DEbufrzq
+    - name: Clear symbolic link between
+      ansible.builtin.file:
+        src: "{{ ansible_env.HOME }}/red-hat-kiosk/rpms"
+        dest: "{{ ansible_env.HOME }}/rpmbuild"
+        state: link
+    - name: Build the kiosk-config RPMS
+      ansible.builtin.shell:
+        spectool -g -R $HOME/rpmbuild/SPECS/kiosk-config.spec |
+        rpmbuild -ba $HOME/rpmbuild/SPECS/kiosk-config.spec
+    - name: Build the microshift-manifests RPM
+      ansible.builtin.shell:
+        spectool -g -R $HOME/rpmbuild/SPECS/microshift-manifests.spec |
+        rpmbuild -ba $HOME/rpmbuild/SPECS/microshift-manifests.spec
+    - name: Ensure the VENDOR directory exists
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/rpmbuild/VENDOR"
+        state: directory
+        mode: '0755'
+    - name: Download Google Chrome RPM
+      ansible.builtin.get_url:
+        url: https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
+        dest: "{{ ansible_env.HOME }}/rpmbuild/VENDOR/google-chrome-stable_current_x86_64.rpm"
+    - name: Rebuild the Google Chrome RPM
+      ansible.builtin.shell: |
+        set -Eeuo pipefail
+        rpmrebuild -s {{ ansible_env.HOME }}/rpmbuild/SPECS/google-chrome-stable.spec -p {{ ansible_env.HOME }}/rpmbuild/VENDOR/google-chrome-stable_current_x86_64.rpm
+        RPM=$(rpm -q {{ ansible_env.HOME }}/rpmbuild/VENDOR/google-chrome-stable_current_x86_64.rpm)
+        mkdir -p {{ ansible_env.HOME }}/rpmbuild/BUILDROOT/$RPM/
+        rpm2cpio {{ ansible_env.HOME }}/rpmbuild/VENDOR/google-chrome-stable_current_x86_64.rpm | cpio -idmv -D {{ ansible_env.HOME }}/rpmbuild/BUILDROOT/$RPM/
+        mv {{ ansible_env.HOME }}/rpmbuild/BUILDROOT/$RPM/opt/google/ {{ ansible_env.HOME }}/rpmbuild/BUILDROOT/$RPM/usr/bin/
+        cd {{ ansible_env.HOME }}/rpmbuild/BUILDROOT/$RPM/usr/bin/
+        rm -f google-chrome-stable
+        ln -s google/chrome/google-chrome google-chrome-stable
+        ln -s google/chrome/google-chrome chrome
+        sed -i.${EPOCHREALTIME:-bak} 's|/opt/google|/usr/bin/google|g' {{ ansible_env.HOME }}/rpmbuild/SPECS/google-chrome-stable.spec
+        rpmbuild -bb {{ ansible_env.HOME }}/rpmbuild/SPECS/google-chrome-stable.spec
+      args:
+        executable: /bin/bash
+      register: rebuild_result
+      failed_when: rebuild_result.rc != 0
+
+    - name: List built RPMs
+      ansible.builtin.command: ls -l {{ ansible_env.HOME }}/rpmbuild/RPMS/x86_64/
+      register: rpm_list
+
+    - name: Display built RPMs
       ansible.builtin.debug:
-        msg: "GIT_REPO_CLONE value: {{ user_git_dir.stdout }}"
+        var: rpm_list.stdout
