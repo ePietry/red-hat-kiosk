@@ -45,6 +45,31 @@ appstream
 baseos
 ```
 
+## Create the container image
+
+Install podman and buildah.
+
+```sh
+sudo dnf install -y podman buildah
+```
+
+Define the target image properties.
+
+```sh
+REGISTRY="quay.io"
+IMAGE_NAME="nmasse_itix/kiosk-app"
+IMAGE_TAG="latest"
+```
+
+Build and push the image to the registry.
+
+```sh
+cd "$GIT_REPO_CLONE/application"
+podman build -t localhost/kiosk-app:latest .
+podman login "$REGISTRY"
+podman tag localhost/kiosk-app:latest "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
+podman push "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
+```
 
 ## Nginx configuration
 
