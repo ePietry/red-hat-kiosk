@@ -2,22 +2,29 @@
   hosts: all
   become: true
   tasks:
-    - name: Create blueprint repo
+    - name: Create Blueprint /tmp/blueprints repo
       ansible.builtin.file:
         path: /tmp/blueprints
         mode: '0755'
         state: directory
-    - name: Copy blueprint file
+    - name: Copy Blueprint file to /tmp/blueprints
       ansible.builtin.copy:
         src: "{{ playbook_dir }}/../blueprints/{{ blueprint }}"
         dest: /tmp/blueprints/blueprint.toml
         mode: '0755'
-    - name: Push a blueprint
+    - name: Read the content of the TOML file
+      ansible.builtin.slurp:
+        src: /tmp/blueprints/blueprint.toml
+      register: toml_file_content
+    - name: Parse TOML content using Python
+      ansible.builtin.shell: "echo '{{ toml_file_content.content | b64decode }}' | python -c 'import sys, toml; print(toml.loads(sys.stdin.read())[\"name\"])'"
+      register: blueprint_name
+    - name: Push Blueprint
       infra.osbuild.push_blueprint:
         src: "/tmp/blueprints/blueprint.toml"
     - name: Start ostree compose
       infra.osbuild.start_compose:
-        blueprint: rhel-edge-blueprint
+        blueprint: "{{ blueprint_name.stdout }}"
         allow_duplicate: true
       register: builder_compose_start_out
     - name: Wait for compose to finish
@@ -42,3 +49,18 @@
         src: /tmp/images/{{ builder_compose_start_out['result']['body']['build_id'] }}.tar
         dest: /var/www/
         remote_src: true
+    - name: adding /var/www/repo to OSTree
+      ansible.builtin.shell: "ostree --repo=/var/www/repo refs"
+    - name: Create /tmp/empty-tree repo
+      ansible.builtin.file:
+        path: /tmp/empty-tree
+        mode: '0755'
+        state: directory
+    - name: optimazing OSTree
+      ansible.builtin.shell: "ostree --repo=/var/www/repo commit -b 'empty' --tree=dir=/tmp/empty-tree"
+    - name: adding /var/www/repo to OSTree
+      ansible.builtin.shell: "ostree --repo=/var/www/repo refs"
+    - name: Clear directory /tmp/images/
+      ansible.builtin.file:
+        path: /tmp/images/
+        state: absent
