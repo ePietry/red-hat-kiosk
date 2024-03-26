@@ -9,7 +9,16 @@
           - rpm-build
           - rpmdevtools
         state: present
-    - name: Clear directory /tmp/images/
+    - name: Get user home directory
+      ansible.builtin.set_fact:
+        user_home_dir: "{{ lookup('env', 'HOME') }}"
+    - name: Clear directory $HOME/rpmbuild
       ansible.builtin.file:
-        path: /tmp/images/
+        path: "{{ user_home_dir }}/rpmbuild"
         state: absent
+    - name: Get user GIT_REPO_CLONE directory
+      ansible.builtin.shell: "printenv HOSTNAME"
+      register: user_git_dir
+    - name: DEbufrzq
+      ansible.builtin.debug:
+        msg: "GIT_REPO_CLONE value: {{ user_git_dir.stdout }}"
