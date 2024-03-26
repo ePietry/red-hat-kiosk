@@ -1,0 +1,44 @@
+- name: Create the initial ostree repo
+  hosts: all
+  become: true
+  vars_files:
+    - blueprint.vars
+  tasks:
+    - name: Add user to weldr group
+      ansible.builtin.user:
+        name: "{{ ansible_user_id }}"
+        groups: weldr
+        append: true
+        #    - name: Create a blueprint
+        #      infra.osbuild.create_blueprint:
+        #        dest: "/home/epietryk/blueprint/blueprint.toml"
+        #        name: "rhel-edge-blueprint"
+        #        description: "{{ builder_blueprint_description }}"
+        #        distro: "{{ builder_blueprint_distro }}"
+        #        groups: "{{ builder_blueprint_groups }}"
+        #        packages: "{{ builder_blueprint_packages }}"
+        #          customizations: "{{ builder_blueprint_customizations }}"
+    - name: Push a blueprint
+      infra.osbuild.push_blueprint:
+        src: "/home/epietryk/blueprint/blueprint.toml"
+    - name: Start ostree compose with idempotent transaction
+      infra.osbuild.start_compose:
+        blueprint: rhel-edge-blueprint
+        allow_duplicate: true
+      register: builder_compose_start_out
+    - name: Print compose UUID
+      ansible.builtin.debug:
+        var: builder_compose_start_out
+    - name: Wait for compose to finish
+      infra.osbuild.wait_compose:
+        compose_id: "{{ builder_compose_start_out['result']['body']['build_id'] }}"
+        timeout: 3600
+    - name: Create /tmp repo
+      ansible.builtin.file:
+        path: /tmp/images/
+        mode: '0755'
+        state: directory
+    - name: Export the compose artifact
+      infra.osbuild.export_compose: # noqa only-builtins
+        compose_id: "{{ builder_compose_start_out['result']['body']['build_id'] }}"
+        dest: /tmp/images/{{ builder_compose_start_out['result']['body']['build_id'] }}.tar
