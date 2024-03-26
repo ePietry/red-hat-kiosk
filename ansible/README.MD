@@ -104,6 +104,9 @@ MYIP="$(ip -4 -br addr show scope global | awk 'NR == 1 { split($3, parts, "/");
 
 Create a `inventory.yaml` file inside the Ansible folder or define the inventory path inside the `ansible.cfg` file
 
-Add blueprint file into the blueprint folder or use the `example_blueprint.toml`
+Add blueprint file into the blueprint folder or use the `blueprint_example.toml`
 
-Create the initial ostree repo using...
+Create the initial ostree repo using `blueprint_example.toml` use the following command: 
+```
+ansible-playbook playbooks/initial_ostree.yaml -e blueprint=blueprint_example.toml
+```
