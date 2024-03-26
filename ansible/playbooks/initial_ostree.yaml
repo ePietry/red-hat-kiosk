@@ -9,19 +9,10 @@
         name: "{{ ansible_user_id }}"
         groups: weldr
         append: true
-        #    - name: Create a blueprint
-        #      infra.osbuild.create_blueprint:
-        #        dest: "/home/epietryk/blueprint/blueprint.toml"
-        #        name: "rhel-edge-blueprint"
-        #        description: "{{ builder_blueprint_description }}"
-        #        distro: "{{ builder_blueprint_distro }}"
-        #        groups: "{{ builder_blueprint_groups }}"
-        #        packages: "{{ builder_blueprint_packages }}"
-        #          customizations: "{{ builder_blueprint_customizations }}"
     - name: Push a blueprint
       infra.osbuild.push_blueprint:
         src: "/home/epietryk/blueprint/blueprint.toml"
-    - name: Start ostree compose with idempotent transaction
+    - name: Start ostree compose
       infra.osbuild.start_compose:
         blueprint: rhel-edge-blueprint
         allow_duplicate: true
@@ -42,3 +33,17 @@
       infra.osbuild.export_compose: # noqa only-builtins
         compose_id: "{{ builder_compose_start_out['result']['body']['build_id'] }}"
         dest: /tmp/images/{{ builder_compose_start_out['result']['body']['build_id'] }}.tar
+    - name: Recursively remove directory /var/www/repo
+      ansible.builtin.file:
+        path: /var/www/repo
+        state: absent
+        #    - name: Create empty file /var/www/repo
+        #      ansible.builtin.file:
+        #        path: /var/www/repo
+        #        state: directory
+        #        mode: '0755'
+    - name: Extract compose artifact into /var/www/repo
+      ansible.builtin.unarchive:
+        src: /tmp/images/{{ builder_compose_start_out['result']['body']['build_id'] }}.tar
+        dest: /var/www/
+        remote_src: true
