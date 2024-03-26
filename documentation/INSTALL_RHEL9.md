@@ -17,7 +17,7 @@ Microshift pre-requisites :
 ```sh
 sudo subscription-manager register --username $RHN_LOGIN --auto-attach
 sudo subscription-manager attach --pool=$RHN_POOL_ID
-sudo dnf install -y osbuild-composer composer-cli cockpit-composer git firewalld
+sudo dnf install -y osbuild-composer composer-cli cockpit-composer git firewalld python3-toml
 sudo systemctl enable --now osbuild-composer.socket
 sudo systemctl enable --now firewalld
 sudo systemctl enable --now cockpit.socket
