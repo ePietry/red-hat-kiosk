@@ -1,18 +1,21 @@
 - name: Create the initial ostree repo
   hosts: all
   become: true
-  vars_files:
-    - blueprint.vars
   tasks:
-    - name: Add user to weldr group
-      ansible.builtin.user:
-        name: "{{ ansible_user_id }}"
-        groups: weldr
-        append: true
+    - name: Create blueprint repo
+      ansible.builtin.file:
+        path: /tmp/blueprints
+        mode: '0755'
+        state: directory
+    - name: Copy blueprint file
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../blueprints/blueprint.toml"
+        dest: /tmp/blueprints/blueprint.toml
+        mode: '0755'
     - name: Push a blueprint
       infra.osbuild.push_blueprint:
-        src: "/home/epietryk/blueprint/blueprint.toml"
-    - name: Start ostree compose
+        src: "/tmp/blueprints/blueprint.toml"
+    - name: Start ostree compose with idempotent transaction
       infra.osbuild.start_compose:
         blueprint: rhel-edge-blueprint
         allow_duplicate: true
@@ -37,11 +40,6 @@
       ansible.builtin.file:
         path: /var/www/repo
         state: absent
-        #    - name: Create empty file /var/www/repo
-        #      ansible.builtin.file:
-        #        path: /var/www/repo
-        #        state: directory
-        #        mode: '0755'
     - name: Extract compose artifact into /var/www/repo
       ansible.builtin.unarchive:
         src: /tmp/images/{{ builder_compose_start_out['result']['body']['build_id'] }}.tar
