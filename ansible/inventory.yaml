@@ -1,7 +1,0 @@
-aws:
-  hosts:
-    192.168.122.45:
-  vars:
-    ansible_port: 22
-    ansible_user: epietryk
-    ansible_key_file: /home/epietryk/.ssh/edge
