@@ -115,8 +115,8 @@ ansible-playbook playbooks/build_RPMS.yaml
 to build a repository containing the RPMS we created, run the 'repo_creation.yaml' playbook and indicate the desiered repo directory suring the -e argument.
 
 For instance to create repository in the '/opt/custom-rpms/' directory use :
-'''
-ansible-playbook playbooks/repo_creation.yaml
-'''
+```
+ansible-playbook playbooks/repo_creation.yaml -e repo_location=/opt/custom-rpms/
+```
 
 
