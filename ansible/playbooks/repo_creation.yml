@@ -1,0 +1,16 @@
+- name: Create a Custom RPM Repository
+  hosts: all
+  become: true
+  vars:
+    repo_location: "/opt/custom-rpms/"
+  tasks:
+    - name: Install createrepo
+      ansible.builtin.dnf:
+        name: createrepo
+        state: present
+    - name: Ensure the repository directory exists
+      ansible.builtin.file:
+        path: "{{ repo_location }}"
+        state: directory
+    - 
+    
