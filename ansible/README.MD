@@ -102,3 +102,11 @@ Create the initial ostree repo using `blueprint_example.toml` use the following 
 ```
 ansible-playbook playbooks/initial_ostree.yaml -e blueprint=blueprint_example.toml
 ```
+
+
+## Build the RPMS
+
+To build RPM for kiosk-config, microshift-manifests and Google Chrome, run the `build_RPMS.yaml` playbook
+```
+ansible-playbook playbooks/build_RPMS.yaml
+```
