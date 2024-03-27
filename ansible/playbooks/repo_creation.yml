@@ -14,6 +14,12 @@
         path: "{{ repo_location }}"
         state: absent
 
+    - name: Old custom repo
+      become: true
+      ansible.builtin.file:
+        path: /etc/yum.repos.d/custom.repo
+        state: absent
+
     - name: Ensure the repository directory exists
       become: true
       ansible.builtin.file:
@@ -53,6 +59,11 @@
         cmd: "sudo dnf list available --disablerepo='*' --enablerepo='custom' kiosk-config google-chrome-stable microshift-manifests"
       register: package_info
       ignore_errors: true
+
+    - name: Verify packages are present
+      become: true
+      ansible.builtin.shell:
+        cmd: "dnf config-manager --enable custom"
 
     - name: Display package info output
       ansible.builtin.debug:
