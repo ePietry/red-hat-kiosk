@@ -93,8 +93,7 @@ MYIP="$(ip -4 -br addr show scope global | awk 'NR == 1 { split($3, parts, "/");
 ```
 ## Ansible Config
 
-Create a `inventory.yaml` file inside the Ansible folder or define the inventory path inside the `ansible.cfg` file
-
+Create a `inventory.yaml` file inside the Ansible folder or define the inventory path inside the `ansible.cfg` file  
 
 Create a `config.yaml` file inside the Ansible folder following this model:
 ```yaml
@@ -108,7 +107,7 @@ ADMIN_PASSWORD:
 ## Create the initial ostree repo
 
 
-Add blueprint file into the blueprint folder or use the `blueprint_example.toml`
+Add blueprint file into the blueprint folder or use the `blueprint_example.toml`  
 The blueprint use in this opperation is define in `config.yaml` as `blueprint:`
 
 Create the initial ostree repo using `blueprint_example.toml` use the following command: 
