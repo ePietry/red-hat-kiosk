@@ -18,14 +18,6 @@
       ansible.builtin.debug:
         var: microshift_info.stdout_lines
 
-    - name: Display ssh package information
-      ansible.builtin.debug:
-        var: ADMIN_SSH_PUBLIC_KEY
-
-    - name: Display password package information
-      ansible.builtin.debug:
-        var: ADMIN_PASSWORD
-
     - name: Install mkpasswd and podman packages
       become: true
       ansible.builtin.dnf:
@@ -39,76 +31,72 @@
       register: admin_password_hash
       changed_when: false
 
-    - name: Update kiosk.toml with admin password hash and SSH public key
+    - name: Set admin password in kiosk.toml
       ansible.builtin.lineinfile:
         path: "{{ ansible_env.HOME }}/red-hat-kiosk/imagebuilder/kiosk.toml"
-        regexp: "{{ item.regexp }}"
-        line: "{{ item.line }}"
-      loop:
-        - { regexp: '^__ADMIN_PASSWORD__=', line: '__ADMIN_PASSWORD__={{ admin_password_hash.stdout }}' }
-        - { regexp: '^__ADMIN_SSH_PUBLIC_KEY__=', line: '__ADMIN_SSH_PUBLIC_KEY__={{ ADMIN_SSH_PUBLIC_KEY }}' }
+        regexp: '^password =.*$'
+        line: 'password = "{{ ADMIN_PASSWORD }}"'
+        backrefs: yes
 
+    - name: Set admin SSH public key in kiosk.toml
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_env.HOME }}/red-hat-kiosk/imagebuilder/kiosk.toml"
+        regexp: '^key =.*$'
+        line: 'key = "{{ ADMIN_SSH_PUBLIC_KEY }}"'
+        backrefs: yes
 
 
     - name: Add custom packages source to composer
       ansible.builtin.shell: |
-        composer-cli sources add <<EOF
+        echo "
         check_gpg = false
         check_ssl = false
-        id = "custom"
-        name = "custom packages for RHEL"
+        id = 'custom'
+        name = 'custom packages for RHEL'
         system = false
-        type = "yum-baseurl"
-        url = "file://{{ repo_location }}"
-        EOF
-      args:
-        executable: /bin/bash
+        type = 'yum-baseurl'
+        url = 'file://{{ repo_location }}'
+        " | composer-cli sources add /dev/stdin
 
-    - name: Add rhocp-4.14 source to composer
+    - name: Add RH OCP 4.14 source to composer
       ansible.builtin.shell: |
-        composer-cli sources add <<EOF
-        id = "rhocp-4.14"
-        name = "Red Hat OpenShift Container Platform 4.14 for RHEL 9"
-        type = "yum-baseurl"
-        url = "https://cdn.redhat.com/content/dist/layered/rhel9/{{ ansible_architecture }}/rhocp/4.14/os"
+        echo "
+        id = 'rhocp-4.14'
+        name = 'Red Hat OpenShift Container Platform 4.14 for RHEL 9'
+        type = 'yum-baseurl'
+        url = 'https://cdn.redhat.com/content/dist/layered/rhel9/{{ ansible_architecture }}/rhocp/4.14/os'
         check_gpg = true
         check_ssl = true
         system = false
         rhsm = true
-        EOF
-      args:
-        executable: /bin/bash
+        " | composer-cli sources add /dev/stdin
 
-    - name: Add fast-datapath source to composer
+    - name: Add Fast Datapath source to composer
       ansible.builtin.shell: |
-        composer-cli sources add <<EOF
-        id = "fast-datapath"
-        name = "Fast Datapath for RHEL 9"
-        type = "yum-baseurl"
-        url = "https://cdn.redhat.com/content/dist/layered/rhel9/{{ ansible_architecture }}/fast-datapath/os"
+        echo "
+        id = 'fast-datapath'
+        name = 'Fast Datapath for RHEL 9'
+        type = 'yum-baseurl'
+        url = 'https://cdn.redhat.com/content/dist/layered/rhel9/{{ ansible_architecture }}/fast-datapath/os'
         check_gpg = true
         check_ssl = true
         system = false
         rhsm = true
-        EOF
-      args:
-        executable: /bin/bash
+        " | composer-cli sources add /dev/stdin
 
     - name: Add EPEL source to composer
       ansible.builtin.shell: |
-        composer-cli sources add <<EOF
-        id = "epel"
-        name = "Extra Packages for Enterprise Linux"
-        type = "yum-baseurl"
-        url = "http://mirror.in2p3.fr/pub/epel/9/Everything/{{ ansible_architecture }}/"
+        echo "
+        id = 'epel'
+        name = 'Extra Packages for Enterprise Linux'
+        type = 'yum-baseurl'
+        url = 'http://mirror.in2p3.fr/pub/epel/9/Everything/{{ ansible_architecture }}/'
         check_gpg = false
         check_ssl = false
         system = false
         rhsm = false
-        EOF
-      args:
-        executable: /bin/bash
+        " | composer-cli sources add /dev/stdin
+
     - name: Push Blueprint
       infra.osbuild.push_blueprint:
         src: "{{ ansible_env.HOME }}/red-hat-kiosk/imagebuilder/kiosk.toml"
-
