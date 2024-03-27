@@ -1,6 +1,7 @@
 - name: Create the initial ostree repo
   hosts: all
   become: true
+  vars_files: ../config.yaml
   tasks:
     - name: Create Blueprint /tmp/blueprints repo
       ansible.builtin.file:

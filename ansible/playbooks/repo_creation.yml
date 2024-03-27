@@ -1,6 +1,7 @@
 ---
 - name: Create a custom RPM repository
   hosts: all
+  vars_files: ../config.yaml
   tasks:
     - name: Install createrepo package
       become: true

@@ -91,16 +91,27 @@ Find the IP address of the current server.
 ```sh
 MYIP="$(ip -4 -br addr show scope global | awk 'NR == 1 { split($3, parts, "/"); print parts[1]; }')"
 ```
+## Ansible Config
+
+Create a `inventory.yaml` file inside the Ansible folder or define the inventory path inside the `ansible.cfg` file
+Create a `config.yaml` file inside the Ansible folder following this model:
+```yaml
+blueprint: #name of the blueprint you want to use form the ansible/bluprint folder. EXAMPLE blueprint: blueprint_example.toml
+repo_location: #EXAMPLE repo_location: /opt/custom-rpms/
+ADMIN_SSH_PUBLIC_KEY: # ssh-rsa AA...
+ADMIN_PASSWORD: 
+```
+
 
 ## Create the initial ostree repo
 
-Create a `inventory.yaml` file inside the Ansible folder or define the inventory path inside the `ansible.cfg` file
 
 Add blueprint file into the blueprint folder or use the `blueprint_example.toml`
+The blueprint use in this opperation is define in `config.yaml` as `blueprint:`
 
 Create the initial ostree repo using `blueprint_example.toml` use the following command: 
 ```
-ansible-playbook playbooks/initial_ostree.yaml -e blueprint=blueprint_example.toml
+ansible-playbook playbooks/initial_ostree.yaml
 ```
 
 
@@ -112,11 +123,12 @@ ansible-playbook playbooks/build_RPMS.yaml
 ```
 
 ## Repository Creation
-to build a repository containing the RPMS we created, run the `repo_creation.yaml` playbook and indicate the desiered repo directory using the `-e` argument.
+To build a repository containing the RPMS we created, run the `repo_creation.yaml` playbook
+The directory where the repo is created is define in `config.yaml` as `repo_location:` 
 
-For instance to create repository in the `/opt/custom-rpms/` directory use :
+To start tge build, run :
 ```
-ansible-playbook playbooks/repo_creation.yaml -e repo_location=/opt/custom-rpms/
+ansible-playbook playbooks/repo_creation.yaml 
 ```
 
 
