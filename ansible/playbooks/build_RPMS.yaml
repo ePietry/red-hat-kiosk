@@ -6,7 +6,7 @@
       ansible.builtin.dnf:
         name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
         state: present
-        disable_gpg_check: yes
+        disable_gpg_check: false
     - name: Install software
       become: true
       ansible.builtin.dnf:
@@ -66,10 +66,15 @@
       register: rebuild_result
       failed_when: rebuild_result.rc != 0
 
-    - name: List built RPMs
-      ansible.builtin.command: ls -l {{ ansible_env.HOME }}/rpmbuild/RPMS/x86_64/
-      register: rpm_list
+    - name: Get build RMPS
+      ansible.builtin.find:
+        path: "{{ ansible_env.HOME }}/rpmbuild/RPMS/x86_64/"
+      register: build_rpms
 
-    - name: Display built RPMs
+    - name: Extract filenames from paths of built RPMs
+      ansible.builtin.set_fact:
+        rpm_filenames: "{{ build_rpms.files | map(attribute='path') | map('basename') | list }}"
+
+    - name: List build RMPS
       ansible.builtin.debug:
-        var: rpm_list.stdout
+        msg: "{{ rpm_filenames }}"
