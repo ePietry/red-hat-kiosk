@@ -1,16 +1,62 @@
-- name: Create a Custom RPM Repository
+---
+- name: Create a custom RPM repository
   hosts: all
-  become: true
   vars:
     repo_location: "/opt/custom-rpms/"
+
   tasks:
-    - name: Install createrepo
+    - name: Install createrepo package
+      become: true
       ansible.builtin.dnf:
         name: createrepo
         state: present
+
+    - name: Clear the repository directory exists
+      become: true
+      ansible.builtin.file:
+        path: "{{ repo_location }}"
+        state: absent
+
     - name: Ensure the repository directory exists
+      become: true
       ansible.builtin.file:
         path: "{{ repo_location }}"
         state: directory
-    - 
-    
+        mode: '0755'
+
+    - name: Copy RPMs to the repository location
+      ansible.builtin.shell: sudo cp {{ ansible_env.HOME }}/rpmbuild/RPMS/x86_64/* {{ repo_location }}
+
+    - name: Initialize the repository with createrepo
+      become: true
+      ansible.builtin.command:
+        cmd: "createrepo {{ repo_location }}"
+
+    - name: Create custom repo file
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/yum.repos.d/custom.repo
+        line: "{{ item }}"
+        create: true
+        mode: '0755'
+      loop:
+        - "[custom]"
+        - "name = Custom RPMS"
+        - "baseurl = file://{{ repo_location }}"
+        - "enabled = 1"
+        - "gpgcheck = 0"
+
+    - name: Clean dnf cache
+      become: true
+      ansible.builtin.command:
+        cmd: dnf clean all
+
+    - name: Verify packages are present
+      ansible.builtin.shell:
+        cmd: "sudo dnf list available --disablerepo='*' --enablerepo='custom' kiosk-config google-chrome-stable microshift-manifests"
+      register: package_info
+      ignore_errors: true
+
+    - name: Display package info output
+      ansible.builtin.debug:
+        var: package_info.stdout_lines
