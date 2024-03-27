@@ -182,6 +182,7 @@ rpmbuild -ba $HOME/rpmbuild/SPECS/microshift-manifests.spec
 Rebuild the Google Chrome RPM
 
 ```sh
+sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
 mkdir $HOME/rpmbuild/VENDOR
 curl -s -Lo $HOME/rpmbuild/VENDOR/google-chrome-stable_current_x86_64.rpm https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
 rpmrebuild -s $HOME/rpmbuild/SPECS/google-chrome-stable.spec -p $HOME/rpmbuild/VENDOR/google-chrome-stable_current_x86_64.rpm
