@@ -96,7 +96,7 @@ MYIP="$(ip -4 -br addr show scope global | awk 'NR == 1 { split($3, parts, "/");
 Create a `inventory.yaml` file inside the Ansible folder or define the inventory path inside the `ansible.cfg` file
 Create a `config.yaml` file inside the Ansible folder following this model:
 ```yaml
-blueprint: #name of the blueprint you want to use form the ansible/bluprint folder. EXAMPLE blueprint: blueprint_example.toml
+blueprint: #name of the blueprint you want to use from the ansible/bluprint folder. EXAMPLE blueprint: blueprint_example.toml
 repo_location: #EXAMPLE repo_location: /opt/custom-rpms/
 ADMIN_SSH_PUBLIC_KEY: # ssh-rsa AA...
 ADMIN_PASSWORD: 
