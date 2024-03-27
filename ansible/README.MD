@@ -101,6 +101,7 @@ blueprint: #name of the blueprint you want to use from the ansible/bluprint fold
 repo_location: #EXAMPLE repo_location: /opt/custom-rpms/
 ADMIN_SSH_PUBLIC_KEY: # ssh-rsa AA...
 ADMIN_PASSWORD: 
+MICROSHIFT_PULL_SECRET: # Generate one on https://console.redhat.com/openshift/install/pull-secret
 ```
 
 
