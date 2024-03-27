@@ -1,3 +1,4 @@
 ansible/inventory.yaml
 .vscode
 ansible/credentials.yaml
+ansible/config.yaml

@@ -1,14 +1,10 @@
 - name: Create the initial ostree repo
   hosts: all
-    
+  vars_files: ../credentials.yaml
   tasks:
-    - name: Display microshift package information
-      ansible.builtin.debug:
-        var: "{{ ADMIN_SSH_PUBLIC_KEY }}"
-
     - name: Extract userspace architecture
       ansible.builtin.set_fact:
-        userspace_arch: "{{ ansible_facts['userspace_architecture'] }}"
+        userspace_arch: "{{ ansible_facts['userspace_architecture']}}"
     - name: Enable required rhocp repositories using subscription-manager
       become: true
       ansible.builtin.command:
@@ -22,6 +18,13 @@
       ansible.builtin.debug:
         var: microshift_info.stdout_lines
 
+    - name: Display ssh package information
+      ansible.builtin.debug:
+        var: ADMIN_SSH_PUBLIC_KEY
+
+    - name: Display password package information
+      ansible.builtin.debug:
+        var: ADMIN_PASSWORD
 
     - name: Install mkpasswd and podman packages
       become: true
@@ -43,13 +46,9 @@
         line: "{{ item.line }}"
       loop:
         - { regexp: '^__ADMIN_PASSWORD__=', line: '__ADMIN_PASSWORD__={{ admin_password_hash.stdout }}' }
+        - { regexp: '^__ADMIN_SSH_PUBLIC_KEY__=', line: '__ADMIN_SSH_PUBLIC_KEY__={{ ADMIN_SSH_PUBLIC_KEY }}' }
 
-    - name: Replace ADMIN_SSH_PUBLIC_KEY placeholder with the actual key
-      ansible.builtin.lineinfile:
-        path: "{{ ansible_env.HOME }}/red-hat-kiosk/imagebuilder/kiosk.toml"
-        regexp: '^__ADMIN_SSH_PUBLIC_KEY__='
-        line: '__ADMIN_SSH_PUBLIC_KEY__={{ ADMIN_SSH_PUBLIC_KEY }}'
-        backrefs: true
+
 
     - name: Add custom packages source to composer
       ansible.builtin.shell: |
