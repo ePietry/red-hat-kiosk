@@ -1,4 +1,3 @@
 ansible/inventory.yaml
 .vscode
-ansible/test
-ansible/test.pub
+ansible/credentials
