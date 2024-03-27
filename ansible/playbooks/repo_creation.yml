@@ -1,9 +1,6 @@
 ---
 - name: Create a custom RPM repository
   hosts: all
-  vars:
-    repo_location: "/opt/custom-rpms/"
-
   tasks:
     - name: Install createrepo package
       become: true
