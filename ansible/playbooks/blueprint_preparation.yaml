@@ -1,0 +1,103 @@
+- name: Create the initial ostree repo
+  hosts: all
+  tasks:
+    - name: Extract userspace architecture
+      ansible.builtin.set_fact:
+        userspace_arch: "{{ ansible_facts['userspace_architecture'] }}"
+    - name: Enable required rhocp repositories using subscription-manager
+      become: true
+      ansible.builtin.command:
+        cmd: "sudo subscription-manager repos --enable rhocp-4.14-for-rhel-9-{{ userspace_arch }}-rpms --enable fast-datapath-for-rhel-9-{{ userspace_arch }}-rpms"
+    - name: Get information about the microshift package
+      ansible.builtin.command:
+        cmd: "dnf info microshift"
+      register: microshift_info
+
+    - name: Display microshift package information
+      ansible.builtin.debug:
+        var: microshift_info.stdout_lines
+
+    - name: Install mkpasswd and podman packages
+      become: true
+      ansible.builtin.dnf:
+        name:
+          - mkpasswd
+          - podman
+        state: present
+
+    - name: Generate bcrypt hash of the admin password
+      command: mkpasswd -m bcrypt "{{ ADMIN_PASSWORD }}"
+      register: admin_password_hash
+      changed_when: false
+
+    - name: Update kiosk.toml with admin password hash and SSH public key
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_env.HOME }}/red-hat-kiosk/imagebuilder/kiosk.toml"
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regexp: '^__ADMIN_PASSWORD__=', line: '__ADMIN_PASSWORD__={{ admin_password_hash.stdout }}' }
+        - { regexp: '^__ADMIN_SSH_PUBLIC_KEY__=', line: '__ADMIN_SSH_PUBLIC_KEY__={{ ADMIN_SSH_PUBLIC_KEY }}' }
+
+    - name: Add custom packages source to composer
+      ansible.builtin.shell: |
+        composer-cli sources add <<EOF
+        check_gpg = false
+        check_ssl = false
+        id = "custom"
+        name = "custom packages for RHEL"
+        system = false
+        type = "yum-baseurl"
+        url = "file://{{ repo_location }}"
+        EOF
+      args:
+        executable: /bin/bash
+
+    - name: Add rhocp-4.14 source to composer
+      ansible.builtin.shell: |
+        composer-cli sources add <<EOF
+        id = "rhocp-4.14"
+        name = "Red Hat OpenShift Container Platform 4.14 for RHEL 9"
+        type = "yum-baseurl"
+        url = "https://cdn.redhat.com/content/dist/layered/rhel9/{{ ansible_architecture }}/rhocp/4.14/os"
+        check_gpg = true
+        check_ssl = true
+        system = false
+        rhsm = true
+        EOF
+      args:
+        executable: /bin/bash
+
+    - name: Add fast-datapath source to composer
+      ansible.builtin.shell: |
+        composer-cli sources add <<EOF
+        id = "fast-datapath"
+        name = "Fast Datapath for RHEL 9"
+        type = "yum-baseurl"
+        url = "https://cdn.redhat.com/content/dist/layered/rhel9/{{ ansible_architecture }}/fast-datapath/os"
+        check_gpg = true
+        check_ssl = true
+        system = false
+        rhsm = true
+        EOF
+      args:
+        executable: /bin/bash
+
+    - name: Add EPEL source to composer
+      ansible.builtin.shell: |
+        composer-cli sources add <<EOF
+        id = "epel"
+        name = "Extra Packages for Enterprise Linux"
+        type = "yum-baseurl"
+        url = "http://mirror.in2p3.fr/pub/epel/9/Everything/{{ ansible_architecture }}/"
+        check_gpg = false
+        check_ssl = false
+        system = false
+        rhsm = false
+        EOF
+      args:
+        executable: /bin/bash
+    - name: Push Blueprint
+      infra.osbuild.push_blueprint:
+        src: "{{ ansible_env.HOME }}/red-hat-kiosk/imagebuilder/kiosk.toml"
+
