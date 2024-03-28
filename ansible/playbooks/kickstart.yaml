@@ -1,0 +1,11 @@
+- name: creat kickstart
+  hosts: all
+  become: true
+  vars_files: ../config.yaml
+  tasks:
+    - name: set MICROSHIFT_PULL_SECRET
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_env.HOME }}/red-hat-kiosk/imagebuilder/kiosk.ks"
+        regexp: '--url=http://__MYIP__/repo'
+        line: '--url=http://"{{ ansible_default_ipv4.address }}"'
+        backrefs: yes

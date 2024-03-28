@@ -5,19 +5,20 @@
     - name: Solve dependencies for the blueprint
       ansible.builtin.command: composer-cli blueprints depsolve kiosk
 
-        
-    - name: Start ostree compose
-      infra.osbuild.start_compose:
-        blueprint: kiosk
-        compose_type: edge-commit
-        allow_duplicate: true
-        ostree_url: http://{{ ansible_default_ipv4.address }}/repo
-      register: builder_compose_start_out
+    - name: Start OSTree Compose
+      ansible.builtin.shell: 
+        cmd: composer-cli compose start-ostree kiosk edge-commit --url http://{{ ansible_default_ipv4.address }}/repo --ref "rhel/9/{{ ansible_architecture }}/edge-kiosk" --parent "rhel/9/{{ ansible_architecture }}/edge" | awk '{print $2}'
+      register: build_id
+
+    - name: Echo BuildID for Microshift Installer
+      ansible.builtin.debug:
+        msg: "Build {{ build_id.stdout_lines | first }} is running..."
 
     - name: Wait for compose to finish
       infra.osbuild.wait_compose:
-        compose_id: "{{ builder_compose_start_out['result']['body']['build_id'] }}"
+        compose_id: "{{build_id.stdout_lines | first}}"
         timeout: 3600
+
 
     - name: Create /tmp/commit repo
       ansible.builtin.file:
@@ -27,26 +28,31 @@
 
     - name: Export the compose artifact to /tmp/commit
       infra.osbuild.export_compose: # noqa only-builtins
-        compose_id: "{{ builder_compose_start_out['result']['body']['build_id'] }}"
-        dest: /tmp/commit/{{ builder_compose_start_out['result']['body']['build_id'] }}.tar
+        compose_id: "{{ build_id.stdout_lines | first }}"
+        dest: /tmp/commit/{{ build_id.stdout_lines | first }}.tar
 
     - name: Create /tmp/commit/ID repo
       ansible.builtin.file:
-        path: /tmp/commit/{{ builder_compose_start_out['result']['body']['build_id'] }}
+        path: /tmp/commit/{{ build_id.stdout_lines | first }}
         mode: '0755'
         state: directory
 
 
-    - name: Extract compose artifact into /var/www/repo
+    - name: Extract compose artifact into /tmp/commit/ID
       ansible.builtin.unarchive:
-        src: /tmp/commit/{{ builder_compose_start_out['result']['body']['build_id'] }}.tar
-        dest: /tmp/commit/{{ builder_compose_start_out['result']['body']['build_id'] }}
+        src: /tmp/commit/{{ build_id.stdout_lines | first }}.tar
+        dest: /tmp/commit/{{ build_id.stdout_lines | first }}
         remote_src: true
 
     - name: Pull local ostree repository
       become: true
-      ansible.builtin.shell: ostree --repo=/var/www/repo pull-local  "/tmp/commit/{{ builder_compose_start_out['result']['body']['build_id'] }}/repo"
-    
+      ansible.builtin.shell: ostree --repo=/var/www/repo pull-local  "/tmp/commit/{{ build_id.stdout_lines | first }}/repo"
+
+#    - name: Clear /tmp/commit repo
+#      ansible.builtin.file:
+#        path: /tmp/commit/
+#        state: absent
+        
     - name: config ostree ref 
       become: true
       ansible.builtin.shell: ostree --repo=/var/www/repo refs
@@ -58,9 +64,10 @@
 
     - name: config ostree logs kiosk 
       become: true
-      ansible.builtin.shell: ostree --repo=/var/www/repo log rhel/9/x86_64/edge
+      ansible.builtin.shell: ostree --repo=/var/www/repo log rhel/9/{{ ansible_architecture }}/edge-kiosk
       register: logs
 
     - name: Print refs
       ansible.builtin.debug:
         var: logs.stdout_lines
+

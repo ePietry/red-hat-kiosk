@@ -1,0 +1,55 @@
+- name: Generate the Installer ISO image
+  hosts: all
+  vars_files: ../credentials.yaml
+  tasks:
+    - name: Clear /tmp/microshift_bluprint
+      ansible.builtin.file:
+        path: /tmp/microshift_bluprint.toml
+        state: absent
+    - name: Create /tmp/microshift_bluprint
+      ansible.builtin.file:
+        path: /tmp/microshift_bluprint.toml
+        state: file
+        mode: "0755"
+    - name: Write blueprint content to /tmp/microshift_bluprint file
+      ansible.builtin.copy:
+        dest: "/tmp/microshift_blueprint"
+        content: |
+          name = "microshift-installer"
+
+          description = ""
+          version = "0.0.0"
+          modules = []
+          groups = []
+          packages = []
+      become: true
+
+      
+    - name: Push Blueprint
+      infra.osbuild.push_blueprint:
+        src: "/tmp/microshift_blueprint.toml"
+
+    - name: Start the compose
+      ansible.builtin.shell: |
+        BUILDID=$(composer-cli compose start-ostree --url {{ repo_url }} --ref {{ ostree_ref }} {{ blueprint_name }} {{ compose_type }} | awk '{print $2}')
+        echo $BUILDID > /tmp/build_id
+      args:
+        executable: /bin/bash
+      register: start_compose_result
+
+    - name: Wait for compose to finish (simplified example)
+      ansible.builtin.shell: |
+        BUILDID=$(cat /tmp/build_id)
+        until composer-cli compose status | grep -E "$BUILDID.*FINISHED"; do
+          sleep 30
+        done
+      args:
+        executable: /bin/bash
+
+    - name: Get BUILDID from file
+      ansible.builtin.shell: "cat /tmp/build_id"
+      register: build_id
+
+    - name: Generate image from the compose
+      ansible.builtin.command:
+        cmd: "composer-cli compose image {{ build_id.stdout }}"
