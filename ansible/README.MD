@@ -156,3 +156,6 @@ Generate the ISO image of the installer by using the following playbook :
 ```
 ansible-playbook playbooks/gen_iso_image.yaml
 ```
+
+## Prepare the Kickstart script
+
