@@ -14,6 +14,10 @@
       ansible.builtin.debug:
         msg: "Build {{ build_id.stdout_lines | first }} is running..."
 
+    - name: Echo IPADRESS
+      ansible.builtin.debug:
+        msg: "{{ ansible_default_ipv4.address }}"
+
     - name: Wait for compose to finish
       infra.osbuild.wait_compose:
         compose_id: "{{build_id.stdout_lines | first}}"
