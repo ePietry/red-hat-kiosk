@@ -142,3 +142,10 @@ To start the build, run :
 ```
 ansible-playbook playbooks/blueprint_preparation.yaml 
 ```
+
+## Ostree construction
+
+Create the ostree image and add it to the ostree repository with `ref = rhel/9/x86_64/edge-kiosk` by using the following playbook :
+```
+ansible-playbook playbooks/blueprint_preparation.yaml 
+```
