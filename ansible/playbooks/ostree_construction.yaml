@@ -10,14 +10,6 @@
         cmd: composer-cli compose start-ostree kiosk edge-commit --url http://{{ ansible_default_ipv4.address }}/repo --ref "rhel/9/{{ ansible_architecture }}/edge-kiosk" --parent "rhel/9/{{ ansible_architecture }}/edge" | awk '{print $2}'
       register: build_id
 
-    - name: Echo BuildID for Microshift Installer
-      ansible.builtin.debug:
-        msg: "Build {{ build_id.stdout_lines | first }} is running..."
-
-    - name: Echo IPADRESS
-      ansible.builtin.debug:
-        msg: "{{ ansible_default_ipv4.address }}"
-
     - name: Wait for compose to finish
       infra.osbuild.wait_compose:
         compose_id: "{{build_id.stdout_lines | first}}"
@@ -52,10 +44,10 @@
       become: true
       ansible.builtin.shell: ostree --repo=/var/www/repo pull-local  "/tmp/commit/{{ build_id.stdout_lines | first }}/repo"
 
-#    - name: Clear /tmp/commit repo
-#      ansible.builtin.file:
-#        path: /tmp/commit/
-#        state: absent
+    - name: Clear /tmp/commit repo
+      ansible.builtin.file:
+        path: /tmp/commit/
+        state: absent
         
     - name: config ostree ref 
       become: true
