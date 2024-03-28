@@ -128,9 +128,17 @@ ansible-playbook playbooks/build_RPMS.yaml
 To build a repository containing the RPMS we created, run the `repo_creation.yaml` playbook
 The directory where the repo is created is define in `config.yaml` as `repo_location:` 
 
-To start tge build, run :
+To start the build, run :
 ```
 ansible-playbook playbooks/repo_creation.yaml 
 ```
 
 
+## Blueprint preparation
+
+To work properly, this playbook needs the property `ADMIN_SSH_PUBLIC_KEY` and `ADMIN_PASSWORD` to be define in `config.yaml`  
+
+To start the build, run :
+```
+ansible-playbook playbooks/blueprint_preparation.yaml 
+```
