@@ -149,3 +149,10 @@ Create the ostree image and add it to the ostree repository with `ref = rhel/9/x
 ```
 ansible-playbook playbooks/blueprint_preparation.yaml 
 ```
+
+## Generate the Installer ISO image
+
+Generate the ISO image of the installer by using the following playbook :
+```
+ansible-playbook playbooks/ostree_construction.yaml
+```
