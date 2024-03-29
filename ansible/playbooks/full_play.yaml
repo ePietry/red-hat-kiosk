@@ -1,22 +1,7 @@
-- name: Generate the Installer ISO image
-  hosts: all
-  vars_files: ../credentials.yaml
-  tasks:
-    - name: Create the initial ostree repo
-      ansible.builtin.import_playbook: initial_ostree.yaml
-
-
-    - name: Build the RPMS
-      ansible.builtin.import_playbook: build_RPMS.yaml
-
-    - name: Repository Creation
-      ansible.builtin.import_playbook: repo_creation.yaml 
-
-    - name: Ostree construction
-      ansible.builtin.import_playbook: ostree_construction.yaml
-
-    - name: Generate the Installer ISO image
-      ansible.builtin.import_playbook: gen_iso_image.yaml
-
-    - name: Prepare & inject the Kickstart script
-      ansible.builtin.import_playbook: kickstart.yaml
+---
+- import_playbook: initial_ostree.yaml
+- import_playbook: build_RPMS.yaml
+- import_playbook: repo_creation.yaml
+- import_playbook: ostree_construction.yaml
+- import_playbook: gen_iso_image.yaml
+- import_playbook: kickstart.yaml
