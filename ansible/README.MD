@@ -157,5 +157,9 @@ Generate the ISO image of the installer by using the following playbook :
 ansible-playbook playbooks/gen_iso_image.yaml
 ```
 
-## Prepare the Kickstart script
+## Prepare & inject the Kickstart script
+Prepare & inject the Kisckstart script and create the final kiosk.ios, use the followin playbook :
+```
+ansible-playbook playbooks/kickstart.yaml
+```
 

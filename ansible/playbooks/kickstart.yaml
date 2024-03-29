@@ -34,5 +34,30 @@
           - lorax
           - pykickstart
 
-    
-          
+    - name: Validate kiosk.ks using ksvalidator
+      ansible.builtin.command:
+        cmd: "ksvalidator {{ ansible_env.HOME }}/red-hat-kiosk/imagebuilder/kiosk.ks"
+      register: ksvalidator_output
+      ignore_errors: yes
+
+    - name: Output error message if ksvalidator fails
+      ansible.builtin.debug:
+        msg: "{{ksvalidator_output.stderr_lines}}"
+      when: ksvalidator_output is failed
+
+    - name : Remove existing kiosk.ios
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/kiosk.iso"
+        state: absent
+
+    - name: Create new kiosk.ios file
+      ansible.builtin.command:
+        cmd: "mkksiso -r 'inst.ks' --ks kiosk.ks 'installer.iso' kiosk.iso"
+      register: ksvalidator_output
+
+    - name : Remove installer.iso
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/installer.iso"
+        state: absent
+
+

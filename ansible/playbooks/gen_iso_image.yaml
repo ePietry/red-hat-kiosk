@@ -43,4 +43,4 @@
     - name: Export the compose artifact to /tmp/commit
       infra.osbuild.export_compose: # noqa only-builtins
         compose_id: "{{ build_id.stdout_lines | first }}"
-        dest: /{{ ansible_env.HOME }}/{{ build_id.stdout_lines | first }} #Ou mettre cette image ?
+        dest: /{{ ansible_env.HOME }}/installer.iso
