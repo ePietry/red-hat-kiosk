@@ -104,6 +104,12 @@ ADMIN_PASSWORD:
 MICROSHIFT_PULL_SECRET: # Generate one on https://console.redhat.com/openshift/install/pull-secret
 ```
 
+## Run all the Ansible files
+To run all of the ansible files, use the following command:
+```
+ansible-playbook playbooks/full_play.yaml
+```
+
 
 ## Create the initial ostree repo
 
@@ -158,7 +164,7 @@ ansible-playbook playbooks/gen_iso_image.yaml
 ```
 
 ## Prepare & inject the Kickstart script
-Prepare & inject the Kisckstart script and create the final kiosk.ios, use the followin playbook :
+Prepare & inject the Kisckstart script and create the final kiosk.iso, use the followin playbook :
 ```
 ansible-playbook playbooks/kickstart.yaml
 ```
