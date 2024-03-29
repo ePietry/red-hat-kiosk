@@ -1,11 +1,38 @@
-- name: creat kickstart
+- name: Create kickstart
   hosts: all
-  become: true
   vars_files: ../config.yaml
   tasks:
-    - name: set MICROSHIFT_PULL_SECRET
+    - name : Remove existing kiosk.ks 
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/red-hat-kiosk/imagebuilder/kiosk.ks"
+        state: absent
+
+    - name: Copy fresh kiosk.ks
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../imagebuilder/kiosk.ks"
+        dest: "{{ ansible_env.HOME }}/red-hat-kiosk/imagebuilder/kiosk.ks"
+        mode: '0755'
+
+    - name: Set repo adress
       ansible.builtin.lineinfile:
         path: "{{ ansible_env.HOME }}/red-hat-kiosk/imagebuilder/kiosk.ks"
         regexp: '--url=http://__MYIP__/repo'
-        line: '--url=http://"{{ ansible_default_ipv4.address }}"'
-        backrefs: yes
+        line: 'ostreesetup --nogpg --osname=rhel --remote=edge --url=http://{{ ansible_default_ipv4.address }} --ref=rhel/9/x86_64/edge-kiosk'
+        backrefs: true
+
+    - name: Set MICROSHIFT_PULL_SECRET
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_env.HOME }}/red-hat-kiosk/imagebuilder/kiosk.ks"
+        regexp: '__MICROSHIFT_PULL_SECRET__'
+        line: "{{ MICROSHIFT_PULL_SECRET }}"
+
+    - name: Install lorax & pykickstart packages
+      become: true
+      ansible.builtin.dnf:
+        state: present
+        name:
+          - lorax
+          - pykickstart
+
+    
+          
