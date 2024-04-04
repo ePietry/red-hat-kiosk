@@ -8,6 +8,8 @@ RHEL 9 pre-requisites :
 
 - RHEL 9 is installed
 - The Red Hat repositories **baseos** and **appstream** are reachable
+
+Ansible pre-requisites:
 - Infra OSBuild collection is installed : `ansible-galaxy collection install infra.osbuild`
 
 
